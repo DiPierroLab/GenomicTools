@@ -1,3 +1,7 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from GenomicTools.tools import *
+
 def make_dotplot(dots, chrom_locs1, chrom_locs2, perm1, perm2, synteny_blocks = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5):
     size_x = 20
     

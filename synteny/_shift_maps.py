@@ -1,3 +1,7 @@
+import numpy as np
+from scipy import stats
+import networkx as ntx
+from GenomicTools.tools import *
 
 def create_shift_map(data, windowsize):    
     """

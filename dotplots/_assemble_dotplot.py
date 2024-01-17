@@ -1,3 +1,6 @@
+import numpy as np
+from GenomicTools.tools import *
+
 def assemble_dotplot_chrom_permutations(block_matrix, perm1 = None, perm2 = None):
     """
     Permutations should be formatted as a dictionary, with the names of chromosomes as keys and a list

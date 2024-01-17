@@ -1,3 +1,6 @@
+import numpy as np
+from GenomicTools.tools import *
+from ._shift_maps import *
 
 def split_plus_minus_chrom_vs_chrom(blocksAB, minsize=2):
     b_plus = []

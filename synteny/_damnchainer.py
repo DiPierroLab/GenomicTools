@@ -1,3 +1,8 @@
+import numpy as np
+import networkx as ntx
+from GenomicTools.tools import *
+from ._shift_maps import *
+from ._filter_blocks import *
 
 def damnchainer(dots, max_dist, minsize = 2):
 
