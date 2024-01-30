@@ -48,9 +48,7 @@ def permute_dotplot(dot_plot_result, og_data_A, og_data_B, perm_A, perm_B):
     permuted_gene_names_B_all = gene_names_B_all[perm_B]
     permuted_gene_labels_B_all = gene_labels_B_all[perm_B]
 
-    permuted_dot_plot_result = {}
-    for key in dot_plot_result:
-        permuted_dot_plot_result[key] = dot_plot_result[key]
+    permuted_dot_plot_result = {key:dot_plot_result[key] for key in dot_plot_result.keys()}
     permuted_dot_plot_result['perm1'] = perm_A
     permuted_dot_plot_result['perm2'] = perm_B
 
@@ -60,12 +58,8 @@ def permute_dotplot(dot_plot_result, og_data_A, og_data_B, perm_A, perm_B):
             b1, b2 = chromB_indices[chromB]
             permuted_dot_plot_result['data'][(chromA,chromB)]['homology_matrix'] = permuted_dot_matrix[a1:a2,:][:,b1:b2].T
 
-    permuted_og_data_A = {}
-    for key in og_data_A.keys():
-        permuted_og_data_A[key] = og_data_A[key]
-    permuted_og_data_B = {}
-    for key in og_data_B.keys():
-        permuted_og_data_B[key] = og_data_B[key]
+    permuted_og_data_A = {key:og_data_A[key] for key in og_data_A.keys()}
+    permuted_og_data_B = {key:og_data_B[key] for key in og_data_B.keys()}
     
     for chromA in chromsA:
         a1, a2 = chromA_indices[chromA]
