@@ -1,2 +1,3 @@
 
-from ._permute_dotplot.py import *
+from ._permute_dotplot import *
+from ._generate_permutations import *
