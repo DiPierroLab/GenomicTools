@@ -15,8 +15,17 @@ def generate_permutations(dot_plot_result, swap_batches, batch_size = 1000):
     chromsA = alphanum_sort(np.unique(chroms[:,0]))
     chromsB = alphanum_sort(np.unique(chroms[:,1]))
 
-    N_genes_A = np.sum([dot_plot_result['data'][(c,'chr1')]['homology_matrix'].shape[1] for c in chromsA])
-    N_genes_B = np.sum([dot_plot_result['data'][('chr1',c)]['homology_matrix'].shape[0] for c in chromsB])
+    if dot_plot_result['species2'] in ['Homo_sapiens', 'Mus_musculus']:
+        dummy_chrom2 = 'chr1'
+    else:
+        dummy_chrom2 = 'HiC_scaffold_1'
+    if dot_plot_result['species1'] in ['Homo_sapiens', 'Mus_musculus']:
+        dummy_chrom1 = 'chr1'
+    else:
+        dummy_chrom1 = 'HiC_scaffold_1'
+
+    N_genes_A = np.sum([dot_plot_result['data'][(c,dummy_chrom2)]['homology_matrix'].shape[1] for c in chromsA])
+    N_genes_B = np.sum([dot_plot_result['data'][(dummy_chrom1,c)]['homology_matrix'].shape[0] for c in chromsB])
 
     if swap_batches != np.inf:
         base_perm_A = np.arange(N_genes_A)

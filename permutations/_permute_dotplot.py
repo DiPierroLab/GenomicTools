@@ -1,15 +1,25 @@
 import numpy as np
+import copy
 from scipy import sparse
 from GenomicTools.tools import *
 from GenomicTools.dotplots import *
 
 def permute_dotplot(dot_plot_result, og_data_A, og_data_B, perm_A, perm_B):
     chroms = np.vstack(list(dot_plot_result['data'].keys()))
-    chromsA = tools.alphanum_sort(np.unique(chroms[:,0]))
-    chromsB = tools.alphanum_sort(np.unique(chroms[:,1]))
-    
-    chrom_locsA = np.cumsum([0] + [dot_plot_result['data'][(c,'chr1')]['homology_matrix'].shape[1] for c in chromsA])
-    chrom_locsB = np.cumsum([0] + [dot_plot_result['data'][('chr1',c)]['homology_matrix'].shape[0] for c in chromsB])
+    chromsA = alphanum_sort(np.unique(chroms[:,0]))
+    chromsB = alphanum_sort(np.unique(chroms[:,1]))
+   
+    if dot_plot_result['species2'] in ['Homo_sapiens', 'Mus_musculus']:
+        dummy_chrom2 = 'chr1'
+    else:
+        dummy_chrom2 = 'HiC_scaffold_1'
+    if dot_plot_result['species1'] in ['Homo_sapiens', 'Mus_musculus']:
+        dummy_chrom1 = 'chr1'
+    else:
+        dummy_chrom1 = 'HiC_scaffold_1'    
+ 
+    chrom_locsA = np.cumsum([0] + [dot_plot_result['data'][(c,dummy_chrom2)]['homology_matrix'].shape[1] for c in chromsA])
+    chrom_locsB = np.cumsum([0] + [dot_plot_result['data'][(dummy_chrom1,c)]['homology_matrix'].shape[0] for c in chromsB])
     chromA_indices = {c:chrom_locsA[i:(i+2)] for i,c in enumerate(chromsA)}
     chromB_indices = {c:chrom_locsB[i:(i+2)] for i,c in enumerate(chromsB)}    
 
@@ -48,7 +58,8 @@ def permute_dotplot(dot_plot_result, og_data_A, og_data_B, perm_A, perm_B):
     permuted_gene_names_B_all = gene_names_B_all[perm_B]
     permuted_gene_labels_B_all = gene_labels_B_all[perm_B]
 
-    permuted_dot_plot_result = {key:dot_plot_result[key] for key in dot_plot_result.keys()}
+    # permuted_dot_plot_result = {key:dot_plot_result[key] for key in dot_plot_result.keys()}
+    permuted_dot_plot_result = copy.deepcopy(dot_plot_result)
     permuted_dot_plot_result['perm1'] = perm_A
     permuted_dot_plot_result['perm2'] = perm_B
 
@@ -58,9 +69,11 @@ def permute_dotplot(dot_plot_result, og_data_A, og_data_B, perm_A, perm_B):
             b1, b2 = chromB_indices[chromB]
             permuted_dot_plot_result['data'][(chromA,chromB)]['homology_matrix'] = permuted_dot_matrix[a1:a2,:][:,b1:b2].T
 
-    permuted_og_data_A = {key:og_data_A[key] for key in og_data_A.keys()}
-    permuted_og_data_B = {key:og_data_B[key] for key in og_data_B.keys()}
-    
+    # permuted_og_data_A = {key:og_data_A[key] for key in og_data_A.keys()}
+    # permuted_og_data_B = {key:og_data_B[key] for key in og_data_B.keys()}
+    permuted_og_data_A = copy.deepcopy(og_data_A)    
+    permuted_og_data_B = copy.deepcopy(og_data_B)
+
     for chromA in chromsA:
         a1, a2 = chromA_indices[chromA]
         permuted_og_data_A[chromA]['ogs'] = permuted_ogs_A_all[:,a1:a2]
