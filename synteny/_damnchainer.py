@@ -71,7 +71,7 @@ def get_the_damn_synteny_blocks(dot_plot_result, og_data_A, og_data_B, params, r
     cc_map_A, inv_cc_map_A, shift_map_A, unshift_map_A = create_shift_map(og_data_A,params['shift_windowsize'])
     cc_map_B, inv_cc_map_B, shift_map_B, unshift_map_B = create_shift_map(og_data_B,params['shift_windowsize'])
     
-    shifted_dots = shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, shift_map_A, shift_map_B)
+    shifted_dots = shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, shift_map_A, shift_map_B, convolution_filter=params['convolution_filter'], x=params['convolution_kernel_size'])
 
     blocks = damnchainer(shifted_dots, params['damn_maxdist'], minsize = params['damn_minsize']) 
 

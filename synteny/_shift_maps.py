@@ -2,6 +2,7 @@ import numpy as np
 from scipy import stats
 import networkx as ntx
 from GenomicTools.tools import *
+from ._convolution_filter import *
 
 def create_shift_map(data, windowsize):    
     """
@@ -50,7 +51,7 @@ def create_shift_map(data, windowsize):
     
     return cc_maps, inv_cc_maps, shift_maps, unshift_maps
 
-def shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, shift_map_A, shift_map_B):
+def shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, shift_map_A, shift_map_B, convolution_filter = True, x = 3):
     data = dot_plot_result['data']
     chromsAB_all = np.vstack(list(data.keys()))
     chromsA = alphanum_sort(np.unique(chromsAB_all[:,0]))
@@ -72,10 +73,21 @@ def shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, 
                 shifted_dots_A = preshifted_dots_A[np.sort(indices)]
                 shifted_dots_B = preshifted_dots_B[np.sort(indices)]
                 
+                if convolution_filter == True:
+                    M = np.zeros([shifted_dots_A.max()+1,shifted_dots_B.max()+1])
+                    M[shifted_dots_A, shifted_dots_B] = 1
+                    Cp, Cm = convolve_dotplot(M, x)
+                    M = deconvolve_dotplot(Cp, Cm, x)
+                    shifted_dots_A, shifted_dots_B = np.where(M == 1)
+                    # shifted_dots_A = shifted_dots_A.astype(int)
+                    # shifted_dots_B = shifted_dots_B.astype(int)
+                    del M, Cp, Cm
+
                 chrom_numA = np.array(shifted_dots_A.shape[0] * [chrom_to_num(chromA.rstrip('A'))])
                 chrom_numB = np.array(shifted_dots_B.shape[0] * [chrom_to_num(chromB.rstrip('B'))])
-                shifted_dots.append(np.vstack([chrom_numA,shifted_dots_A,chrom_numB,shifted_dots_B]).T)
-                
+                shifted_dots.append(np.vstack([chrom_numA,shifted_dots_A,chrom_numB,shifted_dots_B]).T.astype(int))
+                print(chromA,chromB)
+
     return np.vstack(shifted_dots)
 
 def block_slope(block):
