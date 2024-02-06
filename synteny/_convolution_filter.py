@@ -14,7 +14,7 @@ def convolve_dotplot(M, x):
     
     return Cp, Cm 
 
-def deconvolve_dotplot(Cp, Cm, x):
+def deconvolve_dotplot(M, Cp, Cm, x, maxdist):
     x = int(x)
     k_plus = np.identity(x)[::-1]
     k_minus = np.identity(x)
@@ -34,6 +34,10 @@ def deconvolve_dotplot(Cp, Cm, x):
         spot = kbm + np.vstack([np.arange(-1,x-1),np.arange(-1,x-1)]).T
         Mm[spot[:,0], spot[:,1]] += 1
 
-    M = (Mp + Mm > 0).astype(int)    
+    Mr = (Mp + Mm > 0).astype(int)    
 
-    return M
+    k_ones = np.ones((maxdist+1,maxdist+1))
+    I = convolve(Mr,k_ones)
+    H = M * (I > 0).astype(int)
+
+    return H

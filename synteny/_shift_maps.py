@@ -51,7 +51,10 @@ def create_shift_map(data, windowsize):
     
     return cc_maps, inv_cc_maps, shift_maps, unshift_maps
 
-def shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, shift_map_A, shift_map_B, convolution_filter = True, x = 3):
+def shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, shift_map_A, shift_map_B, convolution_filter = True, x = 3, maxdist = None):
+    if (convolution_filter == True) and (maxdist == None):
+        raise ValueError("If 'convolution_filter == True', you must provide 'maxdist'.")
+
     data = dot_plot_result['data']
     chromsAB_all = np.vstack(list(data.keys()))
     chromsA = alphanum_sort(np.unique(chromsAB_all[:,0]))
@@ -77,11 +80,9 @@ def shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, 
                     M = np.zeros([shifted_dots_A.max()+1,shifted_dots_B.max()+1])
                     M[shifted_dots_A, shifted_dots_B] = 1
                     Cp, Cm = convolve_dotplot(M, x)
-                    M = deconvolve_dotplot(Cp, Cm, x)
-                    shifted_dots_A, shifted_dots_B = np.where(M == 1)
-                    # shifted_dots_A = shifted_dots_A.astype(int)
-                    # shifted_dots_B = shifted_dots_B.astype(int)
-                    del M, Cp, Cm
+                    H = deconvolve_dotplot(M, Cp, Cm, x, maxdist)
+                    shifted_dots_A, shifted_dots_B = np.where(H == 1)
+                    # del M, Cp, Cm
 
                 chrom_numA = np.array(shifted_dots_A.shape[0] * [chrom_to_num(chromA.rstrip('A'))])
                 chrom_numB = np.array(shifted_dots_B.shape[0] * [chrom_to_num(chromB.rstrip('B'))])
@@ -138,5 +139,3 @@ def unshift_blocks(blocks, dot_plot_result, inv_cc_map_A, inv_cc_map_B, unshift_
         unshifted_blocks.append(unshifted_block)
     
     return unshifted_blocks
-
-
