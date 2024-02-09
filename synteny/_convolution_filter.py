@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.ndimage import convolve
 
-def convolve_dotplot(M, x):
+def nanosynteny_convolve_dot_plot(M, x):
     x = int(x)
     k_plus = np.identity(x)[::-1]
     k_minus = np.identity(x)
@@ -14,7 +14,7 @@ def convolve_dotplot(M, x):
     
     return Cp, Cm 
 
-def deconvolve_dotplot(M, Cp, Cm, x, maxdist):
+def nanosynteny_deconvolve_dot_plot(Cp, Cm, x):
     x = int(x)
     k_plus = np.identity(x)[::-1]
     k_minus = np.identity(x)
@@ -35,6 +35,10 @@ def deconvolve_dotplot(M, Cp, Cm, x, maxdist):
         Mm[spot[:,0], spot[:,1]] += 1
 
     Mr = (Mp + Mm > 0).astype(int)    
+
+    return Mr
+
+def convolve_deconvolve_maxdist_dot_plot(Mr, M, maxdist):
 
     k_ones = np.ones((maxdist+1,maxdist+1))
     I = convolve(Mr,k_ones)

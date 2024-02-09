@@ -71,9 +71,14 @@ def get_the_damn_synteny_blocks(dot_plot_result, og_data_A, og_data_B, params, r
     cc_map_A, inv_cc_map_A, shift_map_A, unshift_map_A = create_shift_map(og_data_A,params['shift_windowsize'])
     cc_map_B, inv_cc_map_B, shift_map_B, unshift_map_B = create_shift_map(og_data_B,params['shift_windowsize'])
     
-    shifted_dots = shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, shift_map_A, shift_map_B, convolution_filter=params['convolution_filter'], x=params['convolution_kernel_size'], maxdist=params['damn_maxdist'])
+    shifted_dots = shift_input_data(dot_plot_result, og_data_A, og_data_B, cc_map_A, cc_map_B, shift_map_A, shift_map_B)
 
+    convolved_dots = nanosynteny_convolution_step(shifted_dots,params['convolution_kernel_size'],params['damn_maxdist'])
+
+    extended_dots = extension_colvolution_step(convolved_dots, shifted_dots, maxdist)
     blocks = damnchainer(shifted_dots, params['damn_maxdist'], minsize = params['damn_minsize']) 
+    shifted_dots = np.vstack(blocks)
+    
 
     unshifted_blocks = unshift_blocks(blocks, dot_plot_result, inv_cc_map_A, inv_cc_map_B, unshift_map_A, unshift_map_B)    
 
@@ -94,3 +99,45 @@ def get_the_damn_synteny_blocks(dot_plot_result, og_data_A, og_data_B, params, r
         return convert_to_absolute_indices(fixed_blocks, dot_plot_result)
     else:
         raise ValueError("Not a valid option for 'return_absolute'...")
+
+
+# x=params['convolution_kernel_size'], maxdist=params['damn_maxdist']
+# shifted_dots.append(np.vstack([chrom_numA,shifted_dots_A,chrom_numB,shifted_dots_B]).T.astype(int))
+
+def nanosynteny_convolution_step(shifted_dots, x): 
+    chromsA = alphanum_sort(np.unique(shifted_dots[:,0]))
+    chromsB = alphanum_sort(np.unique(shifted_dots[:,2]))
+    convolved_dots = []
+    for chromA in chromsA:
+        for chromB in chromsB:
+             dataAB = shifted_dots[(shifted_dots[:,0] == chromA) * (shifted_dots[:,2] == chromB)] 
+             shifted_dots_A = dataAB[:,1]
+             shifted_dots_B = dataAB[:,3]
+             M = np.zeros([shifted_dots_A.max()+1,shifted_dots_B.max()+1])
+             M[shifted_dots_A, shifted_dots_B] = 1
+             Cp, Cm = nanosynteny_convolve_dot_plot(M, x)
+             Mr = nanosynteny_deconvolve_dotplot(M, Cp, Cm, x, maxdist)
+             shifted_dots_A, shifted_dots_B = np.where(Mr == 1)
+            
+             convolved_dots.append(np.vstack([dataAB[:,0],shifted_dots_A,dataAB[:,2],shifted_dots_B]).T.astype(int))
+
+    return np.vstack(convolved_dots)
+
+def extension_colvolution_step(convolved_dots, shifted_dots, maxdist):
+    chromsA = alphanum_sort(np.unique(shifted_dots[:,0]))
+    chromsB = alphanum_sort(np.unique(shifted_dots[:,2]))
+    convolved_dots = []
+    for chromA in chromsA:
+        for chromB in chromsB:
+             dataAB = shifted_dots[(shifted_dots[:,0] == chromA) * (shifted_dots[:,2] == chromB)]
+             shifted_dots_A = dataAB[:,1]
+             shifted_dots_B = dataAB[:,3]
+             M = np.zeros([shifted_dots_A.max()+1,shifted_dots_B.max()+1])
+             M[shifted_dots_A, shifted_dots_B] = 1
+             Cp, Cm = nanosynteny_convolve_dot_plot(M, x)
+             Mr = nanosynteny_deconvolve_dotplot(M, Cp, Cm, x, maxdist)
+             shifted_dots_A, shifted_dots_B = np.where(Mr == 1)
+            
+             convolved_dots.append(np.vstack([dataAB[:,0],shifted_dots_A,dataAB[:,2],shifted_dots_B]).T.astype(int))
+
+    return np.vstack(convolved_dots)
