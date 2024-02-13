@@ -1,5 +1,5 @@
 
-from ._damnchainer import *
+from ._convolution_filters import *
 from ._filter_blocks import *
-from ._shift_maps import *
-from ._convolution_filter import *
+from ._identify_blocks import *
+from ._run_synteny_identification import *

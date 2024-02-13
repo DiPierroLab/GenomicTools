@@ -1,6 +1,6 @@
 import numpy as np
 from GenomicTools.tools import *
-from ._shift_maps import *
+from GenomicTools.tandem_duplications import *
 
 def split_plus_minus_chrom_vs_chrom(blocksAB, minsize=2):
     b_plus = []
@@ -8,7 +8,7 @@ def split_plus_minus_chrom_vs_chrom(blocksAB, minsize=2):
     b_minus = []
     minus_order = []
     for b in blocksAB:
-        s = (b[-1,3] - b[0,3]) / (b[-1,1] - b[0,1])
+        s = block_slope(b)
         if (s > 0) and (b.shape[0] >= minsize):
             b_plus.append(b)
             plus_order.append(b[0,1])
@@ -24,10 +24,12 @@ def define_forbidden_zones(b_plus_sorted, b_minus_sorted):
     plus_zones_x = []
     plus_zones_y = []
     for b in b_plus_sorted:
-        xmin = b[:,1].min()
-        xmax = b[:,1].max()
-        ymin = b[:,3].min()
-        ymax = b[:,3].max()
+        bx = b[:,1].astype(int)
+        by = b[:,3].astype(int)
+        xmin = bx.min()
+        xmax = bx.max()
+        ymin = by.min()
+        ymax = by.max()
         plus_zones_x.append([[xmin,xmax]])
         plus_zones_y.append([[ymin,ymax]])
 
@@ -41,10 +43,12 @@ def define_forbidden_zones(b_plus_sorted, b_minus_sorted):
     minus_zones_x = []
     minus_zones_y = []
     for b in b_minus_sorted:
-        xmin = b[:,1].min()
-        xmax = b[:,1].max()
-        ymin = b[:,3].min()
-        ymax = b[:,3].max()
+        bx = b[:,1].astype(int)
+        by = b[:,3].astype(int)
+        xmin = bx.min()
+        xmax = bx.max()
+        ymin = by.min()
+        ymax = by.max()        
         minus_zones_x.append([[xmin,xmax]])
         minus_zones_y.append([[ymin,ymax]])
 
@@ -219,10 +223,12 @@ def find_resolve_conflicts(blocksAB, minsize=2, overlap_threshold=1, large_block
     
     return both_final
 
-def fix_blocks(blocks, minsize, overlap_threshold, large_block_dot_threshold, filterblocks=False):
+def fix_blocks(blocks, minsize, overlap_threshold, large_block_dot_threshold):
     stacked_blocks = np.vstack(blocks)
-    chromsA = np.unique(stacked_blocks[:,0])
-    chromsB = np.unique(stacked_blocks[:,2])
+    #chromsA = alphanum_sort(np.unique(stacked_blocks[:,0]))
+    #chromsB = alphanum_sort(np.unique(stacked_blocks[:,2]))
+    chromsA = np.sort(np.unique(stacked_blocks[:,0]))
+    chromsB = np.sort(np.unique(stacked_blocks[:,2]))
 
     fixed_blocks = []
     for chromA in chromsA:
@@ -230,42 +236,4 @@ def fix_blocks(blocks, minsize, overlap_threshold, large_block_dot_threshold, fi
             blocksAB = [b for b in blocks if (b[0,0] == chromA) * (b[0,2] == chromB)]
             fixed_blocksAB = find_resolve_conflicts(blocksAB, minsize, overlap_threshold, large_block_dot_threshold)
             fixed_blocks += fixed_blocksAB
-    
-    if filterblocks == True:
-        final_blocks = []
-        for b in fixed_blocks:
-            if b.shape[0] >= minsize:
-                hx = np.unique(b[:,1],return_counts=True)
-                hy = np.unique(b[:,3],return_counts=True)
-                repx = hx[0][np.where(hx[1] > 1)[0]]
-                repy = hy[0][np.where(hy[1] > 1)[0]]
-                indices = list(range(b.shape[0]))
-                remove = []
-                if (repx.shape[0] > 0):
-                    for r in repx:
-                        reps = np.where(b[:,1] == r)[0]
-                        Rsq = []
-                        for s in reps:
-                            x0, y0 = b[s-1][np.array([1,3])]
-                            x1, y1 = b[s][np.array([1,3])]
-                            x2, y2 = b[s+1][np.array([1,3])]
-                            x_exp = np.mean([x0,x2])
-                            y_exp = np.mean([y0,y2])
-                            Rsq.append((x1-x_exp)**2+(y1-y_exp)**2)
-                        remove += list(set(indices) - set(list(np.argmin(Rsq))))
-                if (repy.shape[0] > 0):
-                    for r in repy:
-                        reps = np.where(b[:,3] == r)[0]
-                        Rsq = []
-                        for s in reps:
-                            x0, y0 = b[s-1][np.array([1,3])]
-                            x1, y1 = b[s][np.array([1,3])]
-                            x2, y2 = b[s+1][np.array([1,3])]
-                            x_exp = np.mean([x0,x2])
-                            y_exp = np.mean([y0,y2])
-                            Rsq.append((x1-x_exp)**2+(y1-y_exp)**2)
-                        remove += list(set(indices) - set(list(np.argmin(Rsq))))
-                final_blocks.append(b[np.array(list(set(indices) - set(remove)))])
-        return final_blocks
-    else:
-        return fixed_blocks
+    return fixed_blocks    

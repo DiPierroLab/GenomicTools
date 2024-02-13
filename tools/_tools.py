@@ -49,12 +49,12 @@ def interval_overlap(I1, I2):
 def block_slope(block):
     x = block[:,1].astype(int)
     y = block[:,3].astype(int)
-    slope = (y[-1] - y[0]) - (x[-1] - x[0])
+    slope = (y[-1] - y[0]) / (x[-1] - x[0])
     return slope
 
 def get_chrom_info(species_data):
     chrom_info = {}
-    chroms = alphanum_sort(np.unique(data[:,0]))
+    chroms = alphanum_sort(np.unique(species_data[:,0]))
     for n, chrom in enumerate(chroms):
         chrom_info[chrom] = {}
         chrom_info[chrom]['number'] = n + 1

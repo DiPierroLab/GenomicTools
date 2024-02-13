@@ -3,15 +3,6 @@ import numpy as np
 import gzip
 from ._tools import * 
 
-def get_chrom_info(species_data):
-    chrom_info = {}
-    chroms = alphanum_sort(np.unique(data[:,0]))
-    for n, chrom in enumerate(chroms):
-        chrom_info[chrom] = {}
-        chrom_info[chrom]['number'] = n + 1
-        chrom_info[chrom]['size'] = species_data[species_data[:,0] == chrom].shape[0]
-    return chrom_info
-
 def load_dot_plot(dot_plot_file):
     d = np.loadtxt(dot_plot_file,skiprows=1,dtype=str,delimiter=',')
     labels = d[0]
@@ -25,7 +16,7 @@ def load_species_data(species_data_file):
     d = np.loadtxt(species_data_file,skiprows=1,dtype=str,delimiter=',')
     labels = d[0]
     species_data = d[1:]
-    with open(dot_plot_file,'r') as f:
+    with open(species_data_file,'r') as f:
         sp = f.readlines()[0].rstrip('\n')
     chrom_info = get_chrom_info(species_data)
     return sp, species_data, labels, chrom_info
