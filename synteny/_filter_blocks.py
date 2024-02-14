@@ -77,7 +77,7 @@ def same_slope_conflict(b_sorted, zones, minsize, overlap_threshold):
                 continue
             olx = interval_overlap(zones_x[ni],zones_x[nj])
             oly = interval_overlap(zones_y[ni],zones_y[nj])
-            if (olx >= overlap_threshold) or (oly >= overlap_threshold):
+            if (olx >= overlap_threshold) and (oly >= overlap_threshold):
                 sj = b_sorted[nj].shape[0]
                 if sj < minsize:
                     remove.append(nj)
