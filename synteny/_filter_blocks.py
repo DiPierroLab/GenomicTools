@@ -1,6 +1,7 @@
 import numpy as np
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
+from ._identify_blocks import *
 
 def split_plus_minus_chrom_vs_chrom(blocksAB, minsize=2):
     b_plus = []
@@ -8,15 +9,16 @@ def split_plus_minus_chrom_vs_chrom(blocksAB, minsize=2):
     b_minus = []
     minus_order = []
     for b in blocksAB:
-        s = block_slope(b)
-        if (s > 0) and (b.shape[0] >= minsize):
-            b_plus.append(b)
-            plus_order.append(b[0,1])
-        elif (s < 0) and (b.shape[0] >= minsize):
-            b_minus.append(b)
-            minus_order.append(b[0,1])
+        b_sorted = b[np.argsort(b[:,1].astype(int))]
+        s = block_slope(b_sorted)
+        if (s > 0) and (b_sorted.shape[0] >= minsize):
+            b_plus.append(b_sorted)
+            plus_order.append(b_sorted[0,1])
+        elif (s < 0) and (b_sorted.shape[0] >= minsize):
+            b_minus.append(b_sorted)
+            minus_order.append(b_sorted[0,1])
     b_plus_sorted = [b_plus[i] for i in np.argsort(plus_order)]
-    b_minus_sorted = [b_minus[i][::-1] for i in np.argsort(minus_order)]
+    b_minus_sorted = [b_minus[i] for i in np.argsort(minus_order)]
 
     return b_plus_sorted, b_minus_sorted
 
@@ -64,10 +66,8 @@ def define_forbidden_zones(b_plus_sorted, b_minus_sorted):
 def same_slope_conflict(b_sorted, zones, minsize, overlap_threshold):
     zones_x, zones_y = zones
     N = zones_x.shape[0]
-    
     remove = []
     for ni in range(N):
-        ri = np.max([np.max(np.diff(b_sorted[ni][:,1])), np.max(np.diff(b_sorted[ni][:,3]))])
         si = b_sorted[ni].shape[0]
         if si < minsize:
             remove.append(ni)
@@ -77,7 +77,7 @@ def same_slope_conflict(b_sorted, zones, minsize, overlap_threshold):
                 continue
             olx = interval_overlap(zones_x[ni],zones_x[nj])
             oly = interval_overlap(zones_y[ni],zones_y[nj])
-            if (olx >= overlap_threshold) and (oly >= overlap_threshold):
+            if (olx >= overlap_threshold) or (oly >= overlap_threshold):
                 sj = b_sorted[nj].shape[0]
                 if sj < minsize:
                     remove.append(nj)
@@ -87,27 +87,14 @@ def same_slope_conflict(b_sorted, zones, minsize, overlap_threshold):
                 elif sj > si:
                     remove.append(ni)
                 elif si == sj:
-                    rj = np.max([np.max(np.diff(b_sorted[nj][:,1])), np.max(np.diff(b_sorted[nj][:,3]))])
-                    if ri > rj:
-                        remove.append(ni)
-                    elif rj > ri:
-                        remove.append(nj)
-                    else:
-                        remove.append(ni)
-                        remove.append(nj)
-    
+                    remove.append(ni)
+                    remove.append(nj)    
     return remove
 
-def find_resolve_conflicts(blocksAB, minsize=2, overlap_threshold=1, large_block_dot_threshold=3):
-    b_plus_sorted, b_minus_sorted = split_plus_minus_chrom_vs_chrom(blocksAB, minsize=minsize)
-    plus_zones_x, plus_zones_y, minus_zones_x, minus_zones_y = define_forbidden_zones(b_plus_sorted, b_minus_sorted)
-
+def different_slope_conflict(b_plus_sorted, b_minus_sorted, zones, pp_remove, mm_remove, minsize=3, overlap_threshold=1):
+    plus_zones_x, plus_zones_y, minus_zones_x, minus_zones_y = zones
     nplus = plus_zones_x.shape[0]
-    nminus = minus_zones_x.shape[0]
-
-    pp_remove = same_slope_conflict(b_plus_sorted, [plus_zones_x, plus_zones_y], minsize, overlap_threshold)
-    mm_remove = same_slope_conflict(b_minus_sorted, [minus_zones_x, minus_zones_y], minsize, overlap_threshold)                   
-                        
+    nminus = minus_zones_x.shape[0] 
     pp_splits = []
     mm_splits = []
     pp_split_remove = []
@@ -118,60 +105,68 @@ def find_resolve_conflicts(blocksAB, minsize=2, overlap_threshold=1, large_block
                 continue
             olx = interval_overlap(plus_zones_x[ni],minus_zones_x[nj])
             oly = interval_overlap(plus_zones_y[ni],minus_zones_y[nj])
-            if (olx >= overlap_threshold) and (oly >= overlap_threshold):
+            if (olx >= overlap_threshold) or (oly >= overlap_threshold):
                 si = b_plus_sorted[ni].shape[0]
-                ri = np.max([np.max(np.diff(b_plus_sorted[ni][:,1])), np.max(np.diff(b_plus_sorted[ni][:,3]))])
                 sj = b_minus_sorted[nj].shape[0]
-                rj = np.max([np.max(np.diff(b_minus_sorted[nj][:,1])), np.max(np.diff(b_minus_sorted[nj][:,3]))])
+
+                xi1, xi2 = plus_zones_x[ni]
+                yi1, yi2 = plus_zones_y[ni]
+                xcondition = (b_minus_sorted[nj][:,1] >= xi1) * (b_minus_sorted[nj][:,1] <= xi2)
+                ycondition = (b_minus_sorted[nj][:,3] >= yi1) * (b_minus_sorted[nj][:,3] <= yi2)
+                ol_genesj = b_minus_sorted[nj][xcondition * ycondition]
+                ol_genesjx = b_minus_sorted[nj][xcondition]
+                ol_genesjy = b_minus_sorted[nj][ycondition]
+                supportedj = supported_by_nanosynteny(ol_genesj,minsize)               
+
+                xj1, xj2 = minus_zones_x[nj]
+                yj1, yj2 = minus_zones_y[nj]
+                xcondition = (b_plus_sorted[ni][:,1] >= xj1) * (b_plus_sorted[ni][:,1] <= xj2)
+                ycondition = (b_plus_sorted[ni][:,3] >= yj1) * (b_plus_sorted[ni][:,3] <= yj2)
+                ol_genesi = b_plus_sorted[ni][xcondition * ycondition]
+                ol_genesix = b_plus_sorted[ni][xcondition]
+                ol_genesiy = b_plus_sorted[ni][ycondition]
+                supportedi = supported_by_nanosynteny(ol_genesi,minsize)
+ 
                 if si < sj:
-                    xi1, xi2 = plus_zones_x[ni]
-                    yi1, yi2 = plus_zones_y[ni]
-                    xcondition = (b_minus_sorted[nj][:,1] >= xi1) * (b_minus_sorted[nj][:,1] <= xi2)
-                    ycondition = (b_minus_sorted[nj][:,3] >= yi1) * (b_minus_sorted[nj][:,3] <= yi2)
-                    ol_genesj = b_minus_sorted[nj][xcondition*ycondition]
-                    ol_genesjx = b_minus_sorted[nj][xcondition*(ycondition == False)]
-                    ol_genesjy = b_minus_sorted[nj][(xcondition == False)*ycondition]
-                    if (ol_genesj.shape[0] < si) and (ol_genesjx.shape[0] < large_block_dot_threshold) and (ol_genesjy.shape[0] < large_block_dot_threshold):
+                    if (ol_genesjx.shape[0] < si) and (ol_genesjy.shape[0] < si) and (not supportedj):
                         mm_split_remove.append(nj)
-                        if ol_genesj.shape[0] == 0:
+                        if ol_genesjx.shape[0] == 0:
                             x_split1 = (xi1 + xi2) / 2.
                             x_split2 = (xi1 + xi2) / 2.
                         else:
-                            x_split1 = ol_genesj[:,1].min()
-                            x_split2 = ol_genesj[:,1].max()
+                            x_split1 = ol_genesjx[:,1].min()
+                            x_split2 = ol_genesjx[:,1].max()
                         mm_splits.append([nj,x_split1,x_split2])
                     else:
                         pp_remove.append(ni)
                 elif si > sj:
-                    xj1, xj2 = minus_zones_x[nj]
-                    yj1, yj2 = minus_zones_y[nj]
-                    xcondition = (b_plus_sorted[ni][:,1] >= xj1) * (b_plus_sorted[ni][:,1] <= xj2)
-                    ycondition = (b_plus_sorted[ni][:,3] >= yj1) * (b_plus_sorted[ni][:,3] <= yj2)
-                    ol_genesi = b_plus_sorted[ni][xcondition * ycondition]
-                    ol_genesix = b_plus_sorted[ni][xcondition*(ycondition == False)]
-                    ol_genesiy = b_plus_sorted[ni][(xcondition == False)*ycondition]
-                    if (ol_genesi.shape[0] < sj) and (ol_genesix.shape[0] < large_block_dot_threshold) and (ol_genesiy.shape[0] < large_block_dot_threshold):
+                    if (ol_genesix.shape[0] < sj) and (ol_genesiy.shape[0] < sj) and (not supportedi):
                         pp_split_remove.append(ni)
-                        if ol_genesi.shape[0] == 0:
+                        if ol_genesix.shape[0] == 0:
                             x_split1 = (xj1 + xj2) / 2.
-                            x_split2 = (xj1 + xj2) / 2.                        
+                            x_split2 = (xj1 + xj2) / 2.
                         else:
-                            x_split1 = ol_genesi[:,1].min()
-                            x_split2 = ol_genesi[:,1].max()
+                            x_split1 = ol_genesix[:,1].min()
+                            x_split2 = ol_genesix[:,1].max()
                         pp_splits.append([ni,x_split1,x_split2])
                     else:
                         mm_remove.append(nj)
                 else:
-                    if ri > rj:
-                        pp_remove.append(ni)
-                    elif ri < rj:
-                        mm_remove.append(nj)
-                    else:
-                        pp_remove.append(ni)
-                        mm_remove.append(nj)
-                        
+                    pp_remove.append(ni)
+                    mm_remove.append(nj)
     pp_remove = pp_remove + list(np.unique(pp_split_remove))
     mm_remove = mm_remove + list(np.unique(mm_split_remove))
+    return pp_remove, mm_remove, pp_splits, mm_splits
+
+def find_resolve_conflicts(blocksAB, minsize=3, overlap_threshold=1, large_block_dot_threshold=3):
+    b_plus_sorted, b_minus_sorted = split_plus_minus_chrom_vs_chrom(blocksAB, minsize=minsize)
+    plus_zones_x, plus_zones_y, minus_zones_x, minus_zones_y = define_forbidden_zones(b_plus_sorted, b_minus_sorted)
+
+    pp_remove = same_slope_conflict(b_plus_sorted, [plus_zones_x, plus_zones_y], minsize, overlap_threshold)
+    mm_remove = same_slope_conflict(b_minus_sorted, [minus_zones_x, minus_zones_y], minsize, overlap_threshold)                   
+                        
+    zones = [plus_zones_x, plus_zones_y, minus_zones_x, minus_zones_y]
+    pp_remove, mm_remove, pp_splits, mm_splits = different_slope_conflict(b_plus_sorted, b_minus_sorted, zones, pp_remove, mm_remove, minsize=minsize, overlap_threshold=overlap_threshold)
 
     pp_split_blocks = []
     mm_split_blocks = []
@@ -200,6 +195,8 @@ def find_resolve_conflicts(blocksAB, minsize=2, overlap_threshold=1, large_block
                 mm_split_blocks.append(mm_piece)
             mm_split_blocks.append(mm_block)
 
+    nplus = plus_zones_x.shape[0]
+    nminus = minus_zones_x.shape[0]
     p_keep = set(np.arange(nplus)) - set(pp_remove)
     m_keep = set(np.arange(nminus)) - set(mm_remove)
     p_final = []
@@ -215,12 +212,8 @@ def find_resolve_conflicts(blocksAB, minsize=2, overlap_threshold=1, large_block
         m_final += mm_split_blocks
     else:
         m_final += mm_split_blocks
-
-    ###
     both_final_init = p_final + m_final              
     both_final = [b[np.argsort(b[:,1])] for b in both_final_init if b.shape[0] >= minsize]
-    ###
-    
     return both_final
 
 def fix_blocks(blocks, minsize, overlap_threshold, large_block_dot_threshold):
