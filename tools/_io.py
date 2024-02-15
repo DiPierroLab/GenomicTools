@@ -4,28 +4,50 @@ import gzip
 from ._tools import * 
 
 def load_dot_plot(dot_plot_file):
-    d = np.loadtxt(dot_plot_file,skiprows=1,dtype=str,delimiter=',')
-    labels = d[0]
-    dot_plot = d[1:]
-    with open(dot_plot_file,'r') as f:
-        sp = f.readlines()[0].rstrip('\n')
+    if dot_plot_file.split('.')[-1] == 'gz':
+        with gzip.open(dot_plot_file,'rb') as f:
+            lines = f.readlines()
+            lines = [line.decode() for line in lines]
+    else:
+        with open(dot_plot_file,'r') as f:
+            lines = f.readlines()
+    sp = lines[0].rstrip('\n')
     spA, spB = sp.split(',')
+    labels = np.array(lines[1].rstrip('\n').split(','))
+    dot_plot = []
+    for line in lines[2:]:
+        dot_plot.append(np.array(line.rstrip('\n').split(',')))
+    dot_plot = np.vstack(dot_plot)
     return spA, spB, dot_plot, labels
 
 def load_species_data(species_data_file):
-    d = np.loadtxt(species_data_file,skiprows=1,dtype=str,delimiter=',')
-    labels = d[0]
-    species_data = d[1:]
-    with open(species_data_file,'r') as f:
-        sp = f.readlines()[0].rstrip('\n')
+    if species_data_file.split('.')[-1] == 'gz':
+        with gzip.open(species_data_file,'rb') as f:
+            lines = f.readlines()
+            lines = [line.decode() for line in lines]
+    else:
+        with open(species_data_file,'r') as f:
+            lines = f.readlines()
+    sp = lines[0].rstrip('\n')
+    labels = np.array(lines[1].rstrip('\n').split(','))
+    species_data = []
+    for line in lines[2:]:
+        species_data.append(np.array(line.rstrip('\n').split(',')))
+    species_data = np.vstack(species_data)    
     chrom_info = get_chrom_info(species_data)
     return sp, species_data, labels, chrom_info
 
 def load_synteny_blocks(synteny_blocks_file):
-    with open(synteny_blocks_file,'r') as f:
-        lines = f.readlines()
-    spA, spB = lines[0].rstrip('\n').split(',')
-    labels = np.array(lines[1].strip('\n').split(','))
+    if synteny_blocks_file.split('.')[-1] == 'gz':
+        with gzip.open(synteny_blocks_file,'rb') as f:
+            lines = f.readlines()
+            lines = [line.decode() for line in lines]
+    else:
+        with open(synteny_blocks_file,'r') as f:
+            lines = f.readlines()
+    sp = lines[0].rstrip('\n')
+    spA, spB = sp.split(',')
+    labels = np.array(lines[1].rstrip('\n').split(','))
     synteny_blocks = []
     for line in lines[2:]:
         if line == '#':
@@ -42,7 +64,7 @@ def load_synteny_blocks(synteny_blocks_file):
     return spA, spB, synteny_blocks, labels
 
 def save_dot_plot(dot_plot_file, spA, spB, dot_plot, labels = None, gzip_file = False):
-    if labels == None:
+    if labels is None:
         labels = 'chromosome name A,relative index A,chromosome name B,relative index B,empty 1,empty 2,empty 3,empty 4,empty 5\n'
     else:
         if len(labels) == 9:
@@ -56,13 +78,14 @@ def save_dot_plot(dot_plot_file, spA, spB, dot_plot, labels = None, gzip_file = 
         lines.append(','.join(line)+'\n')
     if gzip_file == True:
         with gzip.open(dot_plot_file+'.gz','wb') as f:
-            f.writelines(lines)
+            gzip_lines = [line.encode() for line in lines]
+            f.writelines(gzip_lines)
     else:
         with open(dot_plot_file,'w') as f:
             f.writelines(lines)
 
 def save_species_data(species_data_file, sp, species_data, labels = None, gzip_file = False):
-    if labels == None:
+    if labels is None:
         labels = 'chromosome name,chromosome number,relative index,absolute index,orthogroup,gene name,MAKER gene label,empty 1,empty 2,empty 3,empty 4,empty 5' 
     else:
         if len(labels) == 12:
@@ -76,13 +99,14 @@ def save_species_data(species_data_file, sp, species_data, labels = None, gzip_f
         lines.append(','.join(line)+'\n')
     if gzip_file == True:
         with gzip.open(species_data_file+'.gz','wb') as f:
-            f.writelines(lines)
+            gzip_lines = [line.encode() for line in lines]
+            f.writelines(gzip_lines)
     else:
         with open(species_data_file,'w') as f:
             f.writelines(lines)
 
 def save_synteny_blocks(synteny_blocks_file, spA, spB, synteny_blocks, labels = None, gzip_file = False):
-    if labels == None:
+    if labels is None:
         labels = 'chromosome name A,relative index A,chromosome name B,relative index B,empty 1,empty 2,empty 3,empty 4,empty 5\n'
     else:
         if len(labels) == 9:
@@ -98,7 +122,8 @@ def save_synteny_blocks(synteny_blocks_file, spA, spB, synteny_blocks, labels = 
             lines.append(','.join(line)+'\n')
     if gzip_file == True:
         with gzip.open(synteny_blocks_file+'.gz','wb') as f:
-            f.writelines(lines)
+            gzip_lines = [line.encode() for line in lines]
+            f.writelines(gzip_lines)
     else:
         with open(synteny_blocks_file,'w') as f:
             f.writelines(lines)

@@ -1,5 +1,6 @@
 
 import numpy as np
+from scipy.signal import convolve
 from GenomicTools.tools import *
 
 def shift_dots(dot_plot, species_data_A, species_data_B, maps_A, maps_B):
@@ -26,14 +27,13 @@ def shift_dots(dot_plot, species_data_A, species_data_B, maps_A, maps_B):
     shifted_dots = np.vstack(shifted_dots)
     return shifted_dots
 
-def unshift_synteny_blocks(synteny_blocks, maps_A, maps_B):
+def unshift_synteny_blocks(synteny_blocks, maps_A, maps_B, nanosynteny_minsize):
     if type(synteny_blocks) != list:
         raise ValueError("The input synteny_blocks must be a list of synteny block arrays.")    
     cc_maps_A, inv_cc_maps_A, shift_maps_A, unshift_maps_A = maps_A
     cc_maps_B, inv_cc_maps_B, shift_maps_B, unshift_maps_B = maps_B
     unshifted_synteny_blocks = []
     for block in synteny_blocks:
-        block = block[np.argsort(block[:,1]).astype(int)]
         slope = block_slope(block)
         chromA, chromB = block[0,np.array([0,2])]
         unshifted_dots_A = []

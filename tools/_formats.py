@@ -7,8 +7,8 @@ def convert_dot_plot_to_homology_matrix(dot_plot, chrom_info_A, chrom_info_B):
     chromsA = alphanum_sort(np.unique(dot_plot[:,0]))
     chromsB = alphanum_sort(np.unique(dot_plot[:,2]))
     homology_matrix = {}
-    for nA, chromA in chromsA:
-        for nB, chromB in chromsB:
+    for chromA in chromsA:
+        for chromB in chromsB:
             dot_plot_chromAB = dot_plot[(dot_plot[:,0] == chromA)*(dot_plot[:,2] == chromB)]
             M = np.zeros((chrom_info_A[chromA]['size'],chrom_info_B[chromB]['size']))
             M[dot_plot_chromAB[:,1].astype(int),dot_plot_chromAB[:,3].astype(int)] = 1

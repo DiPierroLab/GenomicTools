@@ -37,9 +37,9 @@ def create_shift_map(species_data, windowsize):
         unshift_map = {}
         multiplicity_map = {}
         for n, cc in enumerate(CC):
-            inv_cc_map[n] = np.array(list(cc))
+            inv_cc_map[n] = indices[np.array(list(cc))].flatten()
             for rep in cc:
-                cc_map[rep+1] = n
+                cc_map[indices[rep,0]] = n
                 shift_map[n] = indices.flatten()[n]
                 unshift_map[indices.flatten()[n]] = n
         cc_maps[chrom] = cc_map

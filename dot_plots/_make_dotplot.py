@@ -2,9 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from GenomicTools.tools import *
 
-def make_dotplot(dots, chrom_locs1, chrom_locs2, perm1, perm2, synteny_blocks = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5):
+def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, chrom_perm_A = None, chrom_perm_B = None, synteny_blocks = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5):
     size_x = 20
-    
+    chrom_locs1 = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_info_A.keys()])
+    chrom_locs2 = np.cumsum([0] + [chrom_info_B[key]['size'] for key in chrom_info_B.keys()])    
+    abs_A = {alphanum_sort(chrom_info_A.keys())[n]:s for n, s in enumerate(chrom_locs1[:-1])}
+    abs_B = {alphanum_sort(chrom_info_B.keys())[n]:s for n, s in enumerate(chrom_locs2[:-1])}
+    dots = []
+    perm1 = np.arange(chrom_locs1.shape[0])
+    perm2 = np.arange(chrom_locs2.shape[0])
+    for dot in dot_plot:
+        dots.append([abs_A[dot[0]]+int(dot[1]),abs_B[dot[2]]+int(dot[3])])
+    dots = np.vstack(dots)
     if zoom_specific != None:
         chrA_zoom, indA_zoom, sizeA_zoom, chrB_zoom, indB_zoom, sizeB_zoom = zoom_specific
         aspect1 = sizeA_zoom
@@ -36,26 +45,26 @@ def make_dotplot(dots, chrom_locs1, chrom_locs2, perm1, perm2, synteny_blocks = 
     x_labels = []
     for chrom1 in chrom_locs1:
         plt.plot([chrom1,chrom1],[chrom_locs2[0],chrom_locs2[-1]],c='k',lw=.5,zorder=10)
-        if nc1 > 0:
-            x_label_locs.append((chrom_locs1[nc1] + chrom_locs1[nc1 - 1])/2)
-            if perm1[nc1-1][1] < 0:
-                x_labels.append("-"+perm1[nc1-1][0])
-            else:
-                x_labels.append(perm1[nc1-1][0])
-        nc1 += 1
+#        if nc1 > 0:
+#            x_label_locs.append((chrom_locs1[nc1] + chrom_locs1[nc1 - 1])/2)
+#            if perm1[nc1-1][1] < 0:
+#                x_labels.append("-"+perm1[nc1-1][0])
+#            else:
+#                x_labels.append(perm1[nc1-1][0])
+#        nc1 += 1
 
     nc2 = 0
     y_label_locs = []
     y_labels = []
     for chrom2 in chrom_locs2:
         plt.plot([chrom_locs1[0],chrom_locs1[-1]],[chrom2,chrom2],c='k',lw=.5,zorder=10)
-        if nc2 > 0:
-            y_label_locs.append((chrom_locs2[nc2] + chrom_locs2[nc2 - 1])/2)
-            if perm2[nc2-1][1] < 0:
-                y_labels.append("-"+perm2[nc2-1][0])
-            else:
-                y_labels.append(perm2[nc2-1][0])
-        nc2 += 1  
+#        if nc2 > 0:
+#            y_label_locs.append((chrom_locs2[nc2] + chrom_locs2[nc2 - 1])/2)
+#            if perm2[nc2-1][1] < 0:
+#                y_labels.append("-"+perm2[nc2-1][0])
+#            else:
+#                y_labels.append(perm2[nc2-1][0])
+#        nc2 += 1  
     
     ax.set_xticks(x_label_locs)
     ax.set_xticklabels(x_labels,rotation=90, fontsize=round(.5*fontsize));

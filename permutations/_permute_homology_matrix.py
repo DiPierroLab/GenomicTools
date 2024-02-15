@@ -2,7 +2,7 @@ import numpy as np
 import copy
 from scipy import sparse
 from GenomicTools.tools import *
-from GenomicTools.dotplots import *
+from GenomicTools.dot_plots import *
 
 def permute_homology_matrix(homology_matrix, species_data_A, species_data_B, perm_A, perm_B):
     chromsAB = np.vstack(list(homology_matrix.keys()))
