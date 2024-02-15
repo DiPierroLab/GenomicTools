@@ -216,7 +216,7 @@ def find_resolve_conflicts(blocksAB, minsize=3, overlap_threshold=1, large_block
     both_final = [b[np.argsort(b[:,1])] for b in both_final_init if b.shape[0] >= minsize]
     return both_final
 
-def fix_blocks(blocks, minsize, overlap_threshold, large_block_dot_threshold):
+def fix_blocks(blocks, minsize, overlap_threshold):
     stacked_blocks = np.vstack(blocks)
     #chromsA = alphanum_sort(np.unique(stacked_blocks[:,0]))
     #chromsB = alphanum_sort(np.unique(stacked_blocks[:,2]))
@@ -227,6 +227,6 @@ def fix_blocks(blocks, minsize, overlap_threshold, large_block_dot_threshold):
     for chromA in chromsA:
         for chromB in chromsB:
             blocksAB = [b for b in blocks if (b[0,0] == chromA) * (b[0,2] == chromB)]
-            fixed_blocksAB = find_resolve_conflicts(blocksAB, minsize, overlap_threshold, large_block_dot_threshold)
+            fixed_blocksAB = find_resolve_conflicts(blocksAB, minsize, overlap_threshold)
             fixed_blocks += fixed_blocksAB
     return fixed_blocks    
