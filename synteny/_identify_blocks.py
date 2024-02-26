@@ -1,5 +1,6 @@
 import numpy as np
 import networkx as ntx
+from scipy.signal import fftconvolve
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
 from ._filter_blocks import *
@@ -12,8 +13,8 @@ def supported_by_nanosynteny(block, nanosynteny_minsize):
     xdiff = np.abs(np.diff(x))
     ydiff = np.abs(np.diff(y))
     kernel = np.ones(nanosynteny_minsize - 1)
-    xconv = convolve(xdiff,kernel)[1:-1]
-    yconv = convolve(ydiff,kernel)[1:-1]
+    xconv = fftconvolve(xdiff,kernel)
+    yconv = fftconvolve(ydiff,kernel)
     supported = np.any((xconv == nanosynteny_minsize - 1)*(yconv == nanosynteny_minsize - 1))
     return supported
 

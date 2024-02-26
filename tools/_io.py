@@ -86,7 +86,7 @@ def save_dot_plot(dot_plot_file, spA, spB, dot_plot, labels = None, gzip_file = 
 
 def save_species_data(species_data_file, sp, species_data, labels = None, gzip_file = False):
     if labels is None:
-        labels = 'chromosome name,chromosome number,relative index,absolute index,orthogroup,gene name,MAKER gene label,empty 1,empty 2,empty 3,empty 4,empty 5' 
+        labels = 'chromosome name,chromosome number,relative index,absolute index,orthogroup,gene name,MAKER gene label,empty 1,empty 2,empty 3,empty 4,empty 5\n'
     else:
         if len(labels) == 12:
             labels = ','.join(labels)+'\n'

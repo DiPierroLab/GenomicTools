@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+from scipy.stats import pearsonr
 from scipy import sparse
 from GenomicTools.tools import *
 from GenomicTools.dot_plots import *
@@ -23,9 +24,14 @@ def permute_homology_matrix(homology_matrix, species_data_A, species_data_B, per
         dot_matrix_col = []
         for chromB in chromsB:
             dot_matrix_col.append(homology_matrix[(chromA,chromB)])
-        dot_matrix.append(sparse.vstack(dot_matrix_col)) 
-    dot_matrix = sparse.csr_matrix(sparse.hstack(dot_matrix)) 
+        dot_matrix.append(sparse.hstack(dot_matrix_col)) 
+    dot_matrix = sparse.csr_matrix(sparse.vstack(dot_matrix)) 
     permuted_dot_matrix = dot_matrix[perm_A,:][:,perm_B]
+
+    rx = pearsonr(np.array(dot_matrix.sum(0))[0,1:],np.array(dot_matrix.sum(0))[0,:-1]).statistic
+    ry = pearsonr(np.array(dot_matrix.sum(1))[1:,0],np.array(dot_matrix.sum(1))[:-1,0]).statistic
+    rx_perm = pearsonr(np.array(permuted_dot_matrix.sum(0))[0,1:],np.array(permuted_dot_matrix.sum(0))[0,:-1]).statistic
+    ry_perm = pearsonr(np.array(permuted_dot_matrix.sum(1))[1:,0],np.array(permuted_dot_matrix.sum(1))[:-1,0]).statistic
 
     permuted_homology_matrix = copy.deepcopy(homology_matrix)
     for chromA in chromsA:
@@ -40,4 +46,4 @@ def permute_homology_matrix(homology_matrix, species_data_A, species_data_B, per
     permuted_species_data_A = np.hstack([species_data_A[:,:4],species_data_A[perm_A,4:]])
     permuted_species_data_B = np.hstack([species_data_B[:,:4],species_data_B[perm_B,4:]])
 
-    return permuted_homology_matrix, permuted_species_data_A, permuted_species_data_B
+    return permuted_homology_matrix, permuted_species_data_A, permuted_species_data_B, np.array([rx, ry, rx_perm, ry_perm])

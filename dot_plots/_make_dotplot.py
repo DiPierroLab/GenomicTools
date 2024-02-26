@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from GenomicTools.tools import *
 
-def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = None, chrom_labels_A = None, chrom_labels_B = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5):
+def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = None, chrom_labels_A = None, chrom_labels_B = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5, ax = None):
     size_x = 20
     chrom_names_A = alphanum_sort(chrom_info_A.keys()) 
     chrom_names_B = alphanum_sort(chrom_info_B.keys())
@@ -38,7 +38,8 @@ def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = 
         size_y = 25
         size_x = size_y * (aspect1 / aspect2)
     
-    f, ax = plt.subplots(figsize=(size_x,size_y))
+    if ax == None:
+        f, ax = plt.subplots(figsize=(size_x,size_y))
     ax.scatter(dots[:,0],dots[:,1],s=dot_size,zorder=0)
 
     nc1 = 0
