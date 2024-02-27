@@ -50,7 +50,7 @@ def load_synteny_blocks(synteny_blocks_file):
     labels = np.array(lines[1].rstrip('\n').split(','))
     synteny_blocks = []
     for line in lines[2:]:
-        if line == '#':
+        if line == '#\n':
             try:
                 synteny_blocks.append(np.vstack(block))
             except NameError:
@@ -105,7 +105,7 @@ def save_species_data(species_data_file, sp, species_data, labels = None, gzip_f
         with open(species_data_file,'w') as f:
             f.writelines(lines)
 
-def save_synteny_blocks(synteny_blocks_file, spA, spB, synteny_blocks, labels = None, gzip_file = False):
+def save_synteny_blocks(synteny_blocks_file, spA, spB, synteny_blocks, chrom_info_A, chrom_info_B, labels = None, gzip_file = False):
     if labels is None:
         labels = 'chromosome name A,relative index A,chromosome name B,relative index B,empty 1,empty 2,empty 3,empty 4,empty 5\n'
     else:
@@ -113,12 +113,21 @@ def save_synteny_blocks(synteny_blocks_file, spA, spB, synteny_blocks, labels = 
             labels = ','.join(labels)+'\n'
         else:
             raise ValueError("The labels list/array for synteny blocks must be length 9.")    
+    namesA = list(chrom_info_A.keys())
+    numbersA = [chrom_info_A[chrom]['number'] for chrom in namesA]
+    chrom_num_to_nameA = {numbersA[i]:namesA[i] for i in range(len(namesA))}
+    namesB = list(chrom_info_B.keys())
+    numbersB = [chrom_info_B[chrom]['number'] for chrom in namesB]
+    chrom_num_to_nameB = {numbersB[i]:namesB[i] for i in range(len(namesB))}
     lines = []
     lines.append(','.join([spA,spB])+'\n')
     lines.append(labels)
     for block in synteny_blocks:
-        lines.append('#')
-        for line in block:
+        lines.append('#\n')
+        str_block = block.astype(str)
+        str_block[:,0] = chrom_num_to_nameA[block[0,0]]
+        str_block[:,2] = chrom_num_to_nameB[block[0,2]]
+        for line in str_block:
             lines.append(','.join(line)+'\n')
     if gzip_file == True:
         with gzip.open(synteny_blocks_file+'.gz','wb') as f:
