@@ -14,7 +14,9 @@ def run_synteny_identification(dot_plot, species_data_A, species_data_B, chrom_i
     if 'dist_cutoff' not in params.keys():
         params['dist_cutoff'] = 10 * params['dot_maxdist']
     if 'return_absolute_blocks' not in params.keys():
-        params['return_absolute_blocks'] = True 
+        params['return_absolute_blocks'] = False 
+    if 'verbose' not in params.keys():
+        params['verbose'] = False
     chromsA = alphanum_sort(np.unique(dot_plot[:,0]))
     chromsB = alphanum_sort(np.unique(dot_plot[:,2]))
     maps_A = create_shift_map(species_data_A, params['tandem_windowsize'])
@@ -24,7 +26,8 @@ def run_synteny_identification(dot_plot, species_data_A, species_data_B, chrom_i
     I = 0
     for chromA in chromsA:
         for chromB in chromsB:
-            print(chromA,chromB,str(I)+"/%i"%(len(chromsA)*len(chromsB)),end='\r',flush=True)
+            if params['verbose'] == True:
+                print(chromA,chromB,str(I)+"/%i"%(len(chromsA)*len(chromsB)),end='\r',flush=True)
             I += 1
             shifted_dots_AB = shifted_dots[(shifted_dots[:,0] == chromA)*(shifted_dots[:,2] == chromB)]
             H = np.zeros((chrom_info_A[chromA]['size'],chrom_info_B[chromB]['size']))
