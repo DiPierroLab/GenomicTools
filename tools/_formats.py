@@ -30,7 +30,7 @@ def convert_homology_matrix_to_dot_plot(homology_matrix):
     return dot_plot
 
 def convert_save_old_dot_plot_to_new(dot_plot_file):
-    spA, spB = dot_plot_file.split('-')[0:2]
+    spA, spB = dot_plot_file.split('/')[-1].split('-')[0:2]
     with open(dot_plot_file,"rb") as f:
         hmat = pkl.load(f)
     hmat_lines = []
@@ -45,7 +45,7 @@ def convert_save_old_dot_plot_to_new(dot_plot_file):
     save_dot_plot(spA+'-'+spB+'-dotplot.csv',spA,spB,hmat_lines,gzip_file=True)
     
 def convert_save_old_species_data_to_new(species_data_file):
-    sp = species_data_file.split('-')[0]
+    sp = species_data_file.split('/')[-1].split('-')[0]
     with open(species_data_file,"rb") as f:
         spdat = pkl.load(f)
     spdat_list = []
