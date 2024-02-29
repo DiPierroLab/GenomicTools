@@ -3,7 +3,7 @@ from scipy import sparse
 from GenomicTools.tools import *
 from GenomicTools.dot_plots import *
 
-def generate_permutations(homology_matrix, swap_batches, batch_size = 1000):
+def generate_permutations(homology_matrix, chrom_info_A, chrom_info_B, swap_batches, batch_size = 1000):
     """
     It's easy to generate and execute disjoint swaps. For small numbers of random swaps, the probability the swaps will not be disjoint is small. So, for large numbers of swaps, we can generate a series of disjoint swaps, which should be faster than doing one swap at a time.
     """
@@ -14,9 +14,8 @@ def generate_permutations(homology_matrix, swap_batches, batch_size = 1000):
     else:
         swap_batches = np.inf
     
-    chromsAB = np.vstack(list(homology_matrix.keys()))
-    chromsA = alphanum_sort(np.unique(chromsAB[:,0]))
-    chromsB = alphanum_sort(np.unique(chromsAB[:,1]))
+    chromsA = alphanum_sort(chrom_info_A.keys())
+    chromsB = alphanum_sort(chrom_info_B.keys())
 
     dummy_chrom_A = chromsA[0]
     dummy_chrom_B = chromsB[0]
