@@ -6,14 +6,12 @@ from GenomicTools.tools import *
 from GenomicTools.dot_plots import *
 
 def permute_homology_matrix(homology_matrix, species_data_A, species_data_B, perm_A, perm_B):
-    chromsAB = np.vstack(list(homology_matrix.keys()))
-    chromsA = alphanum_sort(np.unique(chromsAB[:,0]))
-    chromsB = alphanum_sort(np.unique(chromsAB[:,1]))
-    dummy_chrom_A = chromsA[0]
-    dummy_chrom_B = chromsB[0]
-
     chrom_info_A = get_chrom_info(species_data_A)
     chrom_info_B = get_chrom_info(species_data_B)
+
+    chromsA = alphanum_sort(list(chrom_info_A.keys()))
+    chromsB = alphanum_sort(list(chrom_info_B.keys()))
+    
     chrom_locs_A = np.cumsum([0] + [chrom_info_A[c]['size'] for c in chromsA])
     chrom_locs_B = np.cumsum([0] + [chrom_info_B[c]['size'] for c in chromsB])
     chrom_indices_A = {c:chrom_locs_A[i:(i+2)] for i,c in enumerate(chromsA)}
@@ -23,9 +21,11 @@ def permute_homology_matrix(homology_matrix, species_data_A, species_data_B, per
     for n, chromA in enumerate(chromsA):
         dot_matrix_col = []
         for chromB in chromsB:
-            dot_matrix_col.append(homology_matrix[(chromA,chromB)])
-        dot_matrix.append(sparse.hstack(dot_matrix_col)) 
-    dot_matrix = sparse.csr_matrix(sparse.vstack(dot_matrix)) 
+            if (chromA,chromB) in homology_matrix.keys():
+                dot_matrix_col.append(homology_matrix[(chromA,chromB)])
+        if len(dot_matrix_col) > 0:
+            dot_matrix.append(sparse.hstack(dot_matrix_col))
+    dot_matrix = sparse.csr_matrix(sparse.vstack(dot_matrix))
     permuted_dot_matrix = dot_matrix[perm_A,:][:,perm_B]
 
     rx = pearsonr(np.array(dot_matrix.sum(0))[0,1:],np.array(dot_matrix.sum(0))[0,:-1]).statistic

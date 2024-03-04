@@ -6,9 +6,9 @@ from ._io import *
 import gzip
 import pickle as pkl
 
-def convert_dot_plot_to_homology_matrix(dot_plot, chrom_info_A, chrom_info_B): 
-    chromsA = alphanum_sort(np.unique(dot_plot[:,0]))
-    chromsB = alphanum_sort(np.unique(dot_plot[:,2]))
+def convert_dot_plot_to_homology_matrix(dot_plot, chrom_info_A, chrom_info_B):
+    chromsA = alphanum_sort(list(chrom_info_A.keys()))
+    chromsB = alphanum_sort(list(chrom_info_B.keys()))
     homology_matrix = {}
     for chromA in chromsA:
         for chromB in chromsB:
