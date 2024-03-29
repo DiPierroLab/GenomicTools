@@ -1,8 +1,11 @@
+
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
 from GenomicTools.tools import *
 
-def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = None, chrom_labels_A = None, chrom_labels_B = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5, ax = None):
+def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = None, chrom_labels_A = None, chrom_labels_B = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5, macrosynteny = None, macrosynteny_color = 'k', ax = None):
     size_x = 20
     chrom_names_A = alphanum_sort(chrom_info_A.keys()) 
     chrom_names_B = alphanum_sort(chrom_info_B.keys())
@@ -130,3 +133,14 @@ def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = 
                     ax.plot(synteny_block[:,0],synteny_block[:,1],lw=line_width,zorder=5)
                 else:
                     raise ValueError("Specify a valid block color")
+
+    if macrosynteny != None:
+        chrom_edges_A = {c:chrom_locs_A[n:(n+2)] for n, c in enumerate(chrom_names_A)}
+        chrom_edges_B = {c:chrom_locs_B[n:(n+2)] for n, c in enumerate(chrom_names_B)}
+        boxes = []
+        for macro_pair in macrosynteny:
+            x1, x2 = chrom_edges_A[macro_pair[0]]
+            y1, y2 = chrom_edges_B[macro_pair[1]]
+            boxes.append(Rectangle((x1, y1), x2-x1, y2-y1))
+        pc = PatchCollection(boxes, facecolor=macrosynteny_color, alpha=.25, edgecolor='None')
+        ax.add_collection(pc)
