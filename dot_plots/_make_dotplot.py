@@ -5,7 +5,7 @@ from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 from GenomicTools.tools import *
 
-def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = None, chrom_labels_A = None, chrom_labels_B = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5, macrosynteny = None, macrosynteny_color = 'k', ax = None):
+def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = None, chrom_labels_A = None, chrom_labels_B = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, dot_colors = None, dot_cmap = 'copper', cbar_label = '', cbar_shrink = .35, cbar_pad = .02, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5, macrosynteny = None, macrosynteny_color = 'k', ax = None):
     size_x = 20
     chrom_names_A = alphanum_sort(chrom_info_A.keys()) 
     chrom_names_B = alphanum_sort(chrom_info_B.keys())
@@ -43,7 +43,13 @@ def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = 
     
     if ax == None:
         f, ax = plt.subplots(figsize=(size_x,size_y))
-    ax.scatter(dots[:,0],dots[:,1],s=dot_size,zorder=0)
+    if dot_colors is None:
+        ax.scatter(dots[:,0],dots[:,1],s=dot_size,zorder=0,c='C0')
+    else:
+        dot_colors = dot_colors.astype(float)
+        ax.scatter(dots[:,0],dots[:,1],s=dot_size,zorder=0,c=plt.colormaps[dot_cmap](dot_colors))
+        sm = plt.cm.ScalarMappable(cmap=dot_cmap, norm=plt.Normalize(vmin=0, vmax=1))
+        f.colorbar(sm,fraction=.05,shrink=cbar_shrink,label=cbar_label,pad=cbar_pad)
 
     nc1 = 0
     x_label_locs = []
@@ -80,11 +86,11 @@ def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = 
     
     if label1 != None:
         ax.set_xlabel(r"%s"%label1, fontsize=fontsize, labelpad=10)
-        ax.xaxis.set_label_position('top') 
+        ax.xaxis.set_label_position('bottom') 
     
     if label2 != None:    
-        ax.set_ylabel(r"%s"%label2, fontsize=fontsize, rotation=270, labelpad=35)
-        ax.yaxis.set_label_position('right') 
+        ax.set_ylabel(r"%s"%label2, fontsize=fontsize, labelpad=10)#35
+        ax.yaxis.set_label_position('left') 
     
     if zoom_specific != None:
         chrA_zoom0 = chrom_locs_A[chrA_zoom-1] + indA_zoom

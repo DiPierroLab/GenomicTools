@@ -5,8 +5,6 @@ from GenomicTools.tools import *
 
 def contingency_dot_plot(chromA, chromB, dots_input, chrom_info_A, chrom_info_B, microsynteny_input = True):
     if microsynteny_input == True:
-        chromA = chrom_info_A[chromA]['number']
-        chromB = chrom_info_B[chromB]['number']
         dot_plot = np.vstack(dots_input)
     else:
         dot_plot = np.copy(dots_input)
@@ -31,20 +29,19 @@ def calculate_macrosynteny(alpha, dots_input, chrom_info_A, chrom_info_B, micros
         for nB, chromB in enumerate(chrom_names_B):
             C_mat = contingency_dot_plot(chromA,chromB,dots_input,chrom_info_A,chrom_info_B,microsynteny_input=microsynteny_input)
             FET = stats.fisher_exact(C_mat,alternative='greater')
-            if FET.pvalue < alpha:
+            if FET[1] < alpha:
                 macrosynteny_chrom_pairs.append([chromA,chromB])
                 H_mat_macro[nA,nB] = C_mat[0,0]
             H_mat_macro_max[nA,nB] = np.diff(chrom_edges_A[chromA])[0] * np.diff(chrom_edges_B[chromB])[0]
     if calculate_metric == True:
-        H_mat_macro_null = np.zeros([len(chrom_info_A.keys()),len(chrom_info_B.keys())])
-        np.fill_diagonal(H_mat_macro_null,H_mat_macro.sum(np.argmax(H_mat_macro.shape)))
-        p_null = H_mat_macro_null / H_mat_macro_null.sum()   
+        p_null = H_mat_macro.sum(np.argmax(H_mat_macro.shape)) / H_mat_macro.sum()
         p_actual = H_mat_macro / H_mat_macro.sum()
         p_max = H_mat_macro_max / np.sum(H_mat_macro_max)
         H_null = - np.sum(np.nan_to_num(p_null * np.log(p_null)))
         H_actual = - np.sum(np.nan_to_num(p_actual * np.log(p_actual)))
         H_max = - np.sum(np.nan_to_num(p_max * np.log(p_max)))
         metric = (H_actual - H_null) / (H_max - H_null)
-        return macrosynteny_chrom_pairs, H_mat_macro, metric
+        frac = H_mat_macro.sum() / np.max([chrom_locs_A[-1],chrom_locs_B[-1]])
+        return macrosynteny_chrom_pairs, H_mat_macro, metric*(1-frac)
     else:
         return macrosynteny_chrom_pairs, H_mat_macro
