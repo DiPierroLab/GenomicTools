@@ -61,6 +61,8 @@ def load_synteny_blocks(synteny_blocks_file):
                 block.append(np.array(line.rstrip('\n').split(',')))
             except NameError:
                 raise ValueError("Your synteny block file format seems to be wrong.")
+    if lines[-1] != '#\n':
+        synteny_blocks.append(np.vstack(block))
     return spA, spB, synteny_blocks, labels
 
 def save_dot_plot(dot_plot_file, spA, spB, dot_plot, labels = None, gzip_file = False):
