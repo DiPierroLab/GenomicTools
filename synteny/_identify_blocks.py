@@ -13,8 +13,8 @@ def supported_by_nanosynteny(block, nanosynteny_minsize):
     xdiff = np.abs(np.diff(x))
     ydiff = np.abs(np.diff(y))
     kernel = np.ones(nanosynteny_minsize - 1)
-    xconv = fftconvolve(xdiff,kernel)
-    yconv = fftconvolve(ydiff,kernel)
+    xconv = fftconvolve(xdiff,kernel)[1:-1]
+    yconv = fftconvolve(ydiff,kernel)[1:-1]
     supported = np.any((xconv == nanosynteny_minsize - 1)*(yconv == nanosynteny_minsize - 1))
     return supported
 

@@ -21,6 +21,23 @@ def convert_synteny_relative_to_absolute_indices(synteny_blocks, chrom_info_A, c
         absolute_blocks.append(np.vstack(absolute_block))
     return absolute_blocks
 
+def convert_synteny_absolute_to_relative_indices(synteny_blocks, chrom_info_A, chrom_info_B):
+    chrom_locs_A = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_info_A.keys()])
+    chrom_locs_B = np.cumsum([0] + [chrom_info_B[key]['size'] for key in chrom_info_B.keys()])
+    abs_A = {alphanum_sort(chrom_info_A.keys())[n]:s for n, s in enumerate(chrom_locs_A[:-1])}
+    abs_B = {alphanum_sort(chrom_info_B.keys())[n]:s for n, s in enumerate(chrom_locs_B[:-1])}
+    abs_int_A = {n+1:s for n, s in enumerate(chrom_locs_A[:-1])}
+    abs_int_B = {n+1:s for n, s in enumerate(chrom_locs_B[:-1])}
+    relative_blocks = []
+    for block in synteny_blocks:
+        relative_block = []
+        chromA = np.digitize(block[0,0]-1,chrom_locs_A)
+        chromB = np.digitize(block[0,1]-1,chrom_locs_B)
+        for b in block:
+            relative_block.append([chromA,b[0]-abs_int_A[chromA],chromB,b[1]-abs_int_B[chromB]])
+        relative_blocks.append(np.vstack(relative_block))
+    return relative_blocks
+
 def run_synteny_identification(dot_plot, species_data_A, species_data_B, chrom_info_A, chrom_info_B, params):
     if 'tandem_windowsize' not in params.keys():
         params['tandem_windowsize'] = 1
