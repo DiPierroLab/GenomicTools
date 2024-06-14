@@ -5,19 +5,24 @@ from ._filter_blocks import *
 from ._convolution_filters import *
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
+from GenomicTools.permutations import *
 
 def convert_synteny_relative_to_absolute_indices(synteny_blocks, chrom_info_A, chrom_info_B):
     chrom_locs_A = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_info_A.keys()])
     chrom_locs_B = np.cumsum([0] + [chrom_info_B[key]['size'] for key in chrom_info_B.keys()])
-    abs_A = {alphanum_sort(chrom_info_A.keys())[n]:s for n, s in enumerate(chrom_locs_A[:-1])}
-    abs_B = {alphanum_sort(chrom_info_B.keys())[n]:s for n, s in enumerate(chrom_locs_B[:-1])}
-    abs_int_A = {n+1:s for n, s in enumerate(chrom_locs_A[:-1])}
-    abs_int_B = {n+1:s for n, s in enumerate(chrom_locs_B[:-1])}
+    if type(synteny_blocks[0][0,0]) in [int,np.int_]:
+        abs_A = {n+1:s for n, s in enumerate(chrom_locs_A[:-1])}
+        abs_B = {n+1:s for n, s in enumerate(chrom_locs_B[:-1])}
+    elif type(synteny_blocks[0][0,0]) in [str,np.str_]:
+        abs_A = {alphanum_sort(chrom_info_A.keys())[n]:s for n, s in enumerate(chrom_locs_A[:-1])}
+        abs_B = {alphanum_sort(chrom_info_B.keys())[n]:s for n, s in enumerate(chrom_locs_B[:-1])}
+    else:
+        raise ValueError("Something is wrong with the format of synteny_blocks.")
     absolute_blocks = []
     for block in synteny_blocks:
         absolute_block = []
         for b in block:
-            absolute_block.append([abs_int_A[b[0]]+int(b[1]),abs_int_B[b[2]]+int(b[3])])
+            absolute_block.append([abs_A[b[0]]+int(b[1]),abs_B[b[2]]+int(b[3])])
         absolute_blocks.append(np.vstack(absolute_block))
     return absolute_blocks
 
@@ -37,6 +42,35 @@ def convert_synteny_absolute_to_relative_indices(synteny_blocks, chrom_info_A, c
             relative_block.append([chromA,b[0]-abs_int_A[chromA],chromB,b[1]-abs_int_B[chromB]])
         relative_blocks.append(np.vstack(relative_block))
     return relative_blocks
+
+def run_basic_nanosynteny_identification(dot_plot, species_data_A, species_data_B, chrom_info_A, chrom_info_B, calculate_kmin = False):
+    chromsA = alphanum_sort(np.unique(dot_plot[:,0]))
+    chromsB = alphanum_sort(np.unique(dot_plot[:,2]))
+    maps_A = create_shift_map(species_data_A, 1)
+    maps_B = create_shift_map(species_data_B, 1)
+    shifted_dots = shift_dots(dot_plot, species_data_A, species_data_B, maps_A, maps_B)
+    if calculate_kmin == True:
+        rho, N_A, N_B = calculate_density(shifted_dots, chrom_info_A, chrom_info_B)
+        alpha = 0.05
+        kmin = k_min(alpha, rho, N_A, N_B)
+    else:
+        kmin = 3
+    synteny_blocks = []
+    I = 0
+    for chromA in chromsA:
+        for chromB in chromsB:
+            I += 1
+            shifted_dots_AB = shifted_dots[(shifted_dots[:,0] == chromA)*(shifted_dots[:,2] == chromB)]
+            H = np.zeros((chrom_info_A[chromA]['size'],chrom_info_B[chromB]['size']))
+            H[shifted_dots_AB[:,1].astype(int)-1,shifted_dots_AB[:,3].astype(int)-1] = 1
+            Mr = nanosynteny_convolve_dot_plot(H,kmin)
+            xr, yr = np.where(Mr == 1)
+            shifted_dots_AB = np.vstack([np.array(xr.shape[0]*[chromA]),xr+1,np.array(yr.shape[0]*[chromB]),yr+1]).T
+            if shifted_dots_AB.shape[0] > 0:
+                blocks_AB = identify_blocks_chrom_pair(shifted_dots_AB,kmin,1,maps_A,maps_B)
+                if len(blocks_AB) > 0:
+                    synteny_blocks += blocks_AB
+    return synteny_blocks
 
 def run_synteny_identification(dot_plot, species_data_A, species_data_B, chrom_info_A, chrom_info_B, params):
     if 'tandem_windowsize' not in params.keys():
@@ -93,18 +127,7 @@ def run_synteny_identification(dot_plot, species_data_A, species_data_B, chrom_i
     fixed_blocks = fix_blocks(unshifted_blocks_int, params['block_minsize'],params['block_overlap_threshold'])
     
     if params['return_absolute_blocks'] == True:
-        chrom_locs_A = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_info_A.keys()])
-        chrom_locs_B = np.cumsum([0] + [chrom_info_B[key]['size'] for key in chrom_info_B.keys()])
-        abs_A = {alphanum_sort(chrom_info_A.keys())[n]:s for n, s in enumerate(chrom_locs_A[:-1])}
-        abs_B = {alphanum_sort(chrom_info_B.keys())[n]:s for n, s in enumerate(chrom_locs_B[:-1])}
-        abs_int_A = {n+1:s for n, s in enumerate(chrom_locs_A[:-1])}
-        abs_int_B = {n+1:s for n, s in enumerate(chrom_locs_B[:-1])}    
-        absolute_blocks = []
-        for block in fixed_blocks:
-            absolute_block = []
-            for b in block:
-                absolute_block.append([abs_int_A[b[0]]+int(b[1]),abs_int_B[b[2]]+int(b[3])])
-            absolute_blocks.append(np.vstack(absolute_block))
+        absolute_blocks = convert_synteny_relative_to_absolute_indices(fixed_blocks, chrom_info_A, chrom_info_B)
         return absolute_blocks
     else:
         return fixed_blocks

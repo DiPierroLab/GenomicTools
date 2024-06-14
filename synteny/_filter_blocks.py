@@ -1,9 +1,61 @@
 import numpy as np
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
+from scipy.signal import fftconvolve
 from ._identify_blocks import *
 
-def split_plus_minus_chrom_vs_chrom(blocksAB, minsize=2):
+def supported_by_nanosynteny(absolute_block, species_data, nanosynteny_minsize, filter_by_unique_orthogroups = True):
+    """
+    Input:
+    - absolute_block: numpy array (k X 2), where k is the number of genes in the block. The first (second) column is the absolute index (starting from 1) for species A (species B).
+    - species_data: numpy array (N X 12), species data for either species. Since gene pairs in synteny blocks have the same orthogroup, it doesn't matter which species data array is provided.
+    - nanosynteny_minsize: int, minimum number of genes in a nanosynteny block.
+    - filter_by_unique_orthogroups: bool, if True the supporting nanosynteny block must have nanosynteny_minsize unique orthogroups within it for the synteny block in question to be "supported".
+    
+    Output:
+    - supported: bool, is the synteny block supported by nanosynteny?
+    """
+    x = absolute_block[:,0].astype(int)
+    y = absolute_block[:,1].astype(int)
+    xdiff = np.abs(np.diff(x))
+    ydiff = np.abs(np.diff(y))
+    kernel = np.ones(nanosynteny_minsize - 1)
+    xconv = np.round(fftconvolve(xdiff,kernel)[1:])
+    yconv = np.round(fftconvolve(ydiff,kernel)[1:])
+    xconv[-1] = xconv[-2]
+    yconv[-1] = yconv[-2] 
+    
+    if filter_by_unique_orthogroups == False:
+        supported = np.any((xconv == nanosynteny_minsize - 1)*(yconv == nanosynteny_minsize - 1))
+        return supported
+    
+    elif filter_by_unique_orthogroups == True:
+        supported_spots = (xconv == nanosynteny_minsize - 1)*(yconv == nanosynteny_minsize - 1).astype(int)
+        edges = ((xdiff == 1) * (ydiff == 1)).astype(int)
+        A = np.diag(np.zeros(absolute_block.shape[0])) + np.diag(edges,1) + np.diag(edges,-1)
+        G = ntx.Graph(A)
+        nano_ccs = list(ntx.connected_components(G))
+        supported = False
+        for nano_cc in nano_ccs:
+            nano_cc_abs = absolute_block[list(nano_cc)][:,0]
+            nano_cc_ogs = np.unique(species_data[nano_cc_abs-1][:,4])
+            if len(nano_cc_ogs) >= nanosynteny_minsize:
+                supported = True
+                break
+        return supported
+
+def split_plus_minus_chrom_vs_chrom(blocksAB, minsize=3):
+    """
+    Take a list of synteny blocks and split them into those with positive and negative slopes.
+
+    Input:
+    - blocksAB: list of N X 4 numpy arrays, each containing synteny blocks with the chromosome names and relative indices of both genes (one from each species) in all genes pairs
+    - minsize: int, the minimum number of genes that must be in a synteny block
+
+    Output:
+    - b_plus_sorted: list of N X 4 numpy arrays, containing synteny blocks with positive slope (in the same format as the input)
+    - b_minus_sorted: list of N X 4 numpy arrays, containing synteny blocks with negative slope (in the same format as the input)
+    """
     b_plus = []
     plus_order = []
     b_minus = []
@@ -218,8 +270,6 @@ def find_resolve_conflicts(blocksAB, minsize=3, overlap_threshold=1, large_block
 
 def fix_blocks(blocks, minsize, overlap_threshold):
     stacked_blocks = np.vstack(blocks)
-    #chromsA = alphanum_sort(np.unique(stacked_blocks[:,0]))
-    #chromsB = alphanum_sort(np.unique(stacked_blocks[:,2]))
     chromsA = np.sort(np.unique(stacked_blocks[:,0]))
     chromsB = np.sort(np.unique(stacked_blocks[:,2]))
 

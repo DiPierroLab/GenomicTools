@@ -2,60 +2,46 @@
 import numpy as np
 from scipy.signal import fftconvolve
 
-#def nanosynteny_convolve_dot_plot(M, x):
-#    x = int(x)
-#    k_plus = np.identity(x)[::-1]
-#    k_minus = np.identity(x)
-#    C_plus = fftconvolve(M,k_plus,mode='same')[:-(x-1),:-(x-1)]
-#    Cp = (C_plus > x - 1).astype(int)
-#    C_minus = fftconvolve(M,k_minus,mode='same')[:-(x-1),:-(x-1)]
-#    Cm = (C_minus > x - 1).astype(int)
-#    return Cp, Cm
+def nanosynteny_convolve_dot_plot(M, minsize):
+    """
+    Finds all dots in a homology matrix M that are in nanosynteny blocks with at least minsize genes in them.
 
-#def nanosynteny_deconvolve_dot_plot(Cp, Cm, x):
-#    x = int(x)
-#    kblocks_plus = np.vstack(np.where(Cp == 1)).T
-#    kblocks_minus = np.vstack(np.where(Cm == 1)).T
-#    M_shape = [Cm.shape[0]+x-1, Cm.shape[1]+x-1]
-#    Mp = np.zeros(M_shape)
-#    Mm = np.zeros(M_shape)
-#    for kbp in kblocks_plus:
-#        spot = kbp + np.vstack([np.arange(-1,x-1),np.arange(-1,x-1)]).T
-#        Mp[spot[::-1,0], spot[:,1]] += 1
-#    for kbm in kblocks_minus:
-#        spot = kbm + np.vstack([np.arange(-1,x-1),np.arange(-1,x-1)]).T
-#        Mm[spot[:,0], spot[:,1]] += 1
-#    Mr = (Mp + Mm > 0).astype(int)
-#    return Mr
+    Input:
+    - M: numpy array (N X N), input homology matrix
+    - minsize: int, the minimum number of genes allowed in a nanosynteny block
 
-def nanosynteny_convolve_dot_plot(M, x):
-    x = int(x)
-    k_plus = np.identity(x)
-    k_minus = np.identity(x)[::-1]
-    C_plus = fftconvolve(M,k_plus,mode='same')
-    Cp = (C_plus > x - .5).astype(int)
-    C_minus = fftconvolve(M,k_minus,mode='same')
-    Cm = (C_minus > x - .5).astype(int)
-    if x % 2 != 0:
-        a = int((x-1)/2)
-        b = int((x-1)/2)
-    else:
-        a = int(x/2)
-        b = int(x/2)-1
-    xp,yp = np.where(Cp==1)
-    xp = np.hstack([xp+i for i in range(-a,b+1)])
-    yp = np.hstack([yp+i for i in range(-a,b+1)])
-    xm,ym = np.where(Cm==1)
-    xm = np.hstack([xm+i for i in range(-a,b+1)])
-    ym = np.hstack([ym-i-1 for i in range(-a,b+1)])
-    Mr = np.zeros(M.shape)
-    Mr[xp,yp] = 1
-    Mr[xm,ym] = 1
+    Output:
+    - Mr: numpy array (N X N), homology matrix encoding dots in nanosynteny
+    """
+    minsize = int(minsize)
+    k_plus = np.identity(minsize)
+    k_minus = k_plus[::-1]
+    C_plus = np.round(fftconvolve(M,k_plus,mode='full'))
+    C_minus = np.round(fftconvolve(M,k_minus,mode='full'))
+    xp, yp = np.where(C_plus[(minsize-1):,(minsize-1):] == minsize)
+    xm, ym = np.where(C_minus[(minsize-1):,(minsize-1):] == minsize)
+    mr = np.zeros(M.shape)
+    for n_plus in range(xp.shape[0]):
+        mr[xp[n_plus]:(xp[n_plus]+minsize),yp[n_plus]:(yp[n_plus]+minsize)] += k_plus
+    for n_minus in range(xm.shape[0]):
+        mr[xm[n_minus]:(xm[n_minus]+minsize),ym[n_minus]:(ym[n_minus]+minsize)] += k_minus
+    Mr = (mr > 0).astype(int)
     return Mr
 
 def convolve_deconvolve_maxdist_dot_plot(Mr, M, maxdist):
+    """
+    Identify all dots in the homology matrix M that are within maxdist of any dot in the homology matrix Mr.
+ 
+    Input:
+    - Mr: numpy array (N X N), a homology matrix encoding active dots (usually those dots in synteny)
+    - M: numpy array (N X N), a homology matrix 
+    - maxdist: int, the maximum distance for adding dots. Distance is defined here as max(|x1-x2|,|y1-y2|) for dots (x1,y1) and (x2,y2).
+
+    Output:
+    - H: a homology matrix containing all dots in the homology matrix M that are within maxdist of any dot in the homology matrix Mr
+    """
     maxdist = 2 * int(maxdist) + 1
     k_ones = np.ones((maxdist,maxdist))
-    I = fftconvolve(Mr,k_ones,mode='same')
-    H = M * (np.abs(I) > .5).astype(int)
+    I = np.round(fftconvolve(Mr,k_ones,mode='same'))
+    H = M * (np.abs(I) > 0).astype(int)
     return H

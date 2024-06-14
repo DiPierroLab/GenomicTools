@@ -18,7 +18,7 @@ def convert_dot_plot_to_homology_matrix(dot_plot, chrom_info_A, chrom_info_B):
             homology_matrix[(chromA,chromB)] = csr_matrix(M)
     return homology_matrix
 
-def convert_homology_matrix_to_dot_plot(homology_matrix):
+def convert_homology_matrix_to_dot_plot(homology_matrix, labels = None, additional_data = None):
     dot_plot = []
     for chromAB in homology_matrix.keys():
         chromA, chromB = chromAB
@@ -27,22 +27,22 @@ def convert_homology_matrix_to_dot_plot(homology_matrix):
         dot_plot_chromAB = np.vstack([np.array(N*[chromA]),dotsA+1,np.array(N*[chromB]),dotsB+1]).T
         dot_plot.append(dot_plot_chromAB)
     dot_plot = np.vstack(dot_plot)
-    return dot_plot
-
-def convert_save_old_dot_plot_to_new(dot_plot_file):
-    spA, spB = dot_plot_file.split('/')[-1].split('-')[0:2]
-    with open(dot_plot_file,"rb") as f:
-        hmat = pkl.load(f)
-    hmat_lines = []
-    for chrom_pair in hmat['data'].keys():
-        x,y = np.where(hmat['data'][chrom_pair]['homology_matrix'].A.T == 1)
-        chromA,chromB = chrom_pair
-        out = np.vstack([np.array(x.shape[0]*[chromA]),x+1,np.array(x.shape[0]*[chromB]),y+1]).T
-        hmat_lines.append(out)
-    hmat_lines = np.vstack(hmat_lines)
-    empty = np.vstack((9-hmat_lines.shape[1])*[np.array(hmat_lines.shape[0]*[''])]).T
-    hmat_lines = np.hstack([hmat_lines,empty])
-    save_dot_plot(spA+'-'+spB+'-dotplot.csv',spA,spB,hmat_lines,gzip_file=True)
+    empty = np.array(dot_plot.shape[0]*[['']])
+    if additional_data is None:
+        dot_plot = np.hstack([dot_plot]+5*[empty])
+    else:
+        n_additional_data = len(additional_data)
+        to_add = []
+        for i in range(n_additional_data):
+            to_add.append(additional_data[i].reshape(dot_plot.shape[0],1))
+        to_add += (5-i-1)*[empty]
+        dot_plot = np.hstack([dot_plot]+to_add)
+    if labels is None:
+        if additional_data is not None:
+            raise ValueError("Label your additional data!")
+        else:
+            labels = np.array(['chromosome name A','relative index A','chromosome name B','relative index B','empty 1','empty 2','empty 3','empty 4','empty 5'])
+    return dot_plot, labels
     
 def convert_save_old_species_data_to_new(species_data_file):
     sp = species_data_file.split('/')[-1].split('-')[0]
