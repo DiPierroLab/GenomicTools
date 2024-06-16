@@ -43,18 +43,15 @@ def convert_synteny_absolute_to_relative_indices(synteny_blocks, chrom_info_A, c
         relative_blocks.append(np.vstack(relative_block))
     return relative_blocks
 
-def run_basic_nanosynteny_identification(dot_plot, species_data_A, species_data_B, chrom_info_A, chrom_info_B, calculate_kmin = False):
+def run_basic_nanosynteny_identification(dot_plot, species_data_A, species_data_B, chrom_info_A, chrom_info_B,  spA, spB, nanosynteny_minsize = None, alpha = 0.05, unshift_blocks = True):
     chromsA = alphanum_sort(np.unique(dot_plot[:,0]))
     chromsB = alphanum_sort(np.unique(dot_plot[:,2]))
     maps_A = create_shift_map(species_data_A, 1)
     maps_B = create_shift_map(species_data_B, 1)
     shifted_dots = shift_dots(dot_plot, species_data_A, species_data_B, maps_A, maps_B)
-    if calculate_kmin == True:
+    if nanosynteny_minsize is None:
         rho, N_A, N_B = calculate_density(shifted_dots, chrom_info_A, chrom_info_B)
-        alpha = 0.05
-        kmin = k_min(alpha, rho, N_A, N_B)
-    else:
-        kmin = 3
+        nanosynteny_minsize = k_min(alpha, rho, N_A, N_B)
     synteny_blocks = []
     I = 0
     for chromA in chromsA:
@@ -63,14 +60,22 @@ def run_basic_nanosynteny_identification(dot_plot, species_data_A, species_data_
             shifted_dots_AB = shifted_dots[(shifted_dots[:,0] == chromA)*(shifted_dots[:,2] == chromB)]
             H = np.zeros((chrom_info_A[chromA]['size'],chrom_info_B[chromB]['size']))
             H[shifted_dots_AB[:,1].astype(int)-1,shifted_dots_AB[:,3].astype(int)-1] = 1
-            Mr = nanosynteny_convolve_dot_plot(H,kmin)
+            Mr = nanosynteny_convolve_dot_plot(H,nanosynteny_minsize)
             xr, yr = np.where(Mr == 1)
             shifted_dots_AB = np.vstack([np.array(xr.shape[0]*[chromA]),xr+1,np.array(yr.shape[0]*[chromB]),yr+1]).T
             if shifted_dots_AB.shape[0] > 0:
-                blocks_AB = identify_blocks_chrom_pair(shifted_dots_AB,kmin,1,maps_A,maps_B)
+                blocks_AB = identify_blocks_chrom_pair(shifted_dots_AB,species_data_A,species_data_B,maps_A,maps_B,nanosynteny_minsize,1)
                 if len(blocks_AB) > 0:
                     synteny_blocks += blocks_AB
-    return synteny_blocks
+    if spA == spB:
+        symm = blocks_symmetric(synteny_blocks)
+        if not np.all(symm):
+            raise ValueError("The nanosynteny blocks are not symmetric...")
+    if unshift_blocks == True:
+        synteny_blocks = unshift_synteny_blocks(synteny_blocks,maps_A,maps_B,nanosynteny_minsize)
+        return synteny_blocks
+    else:
+        return synteny_blocks, maps_A, maps_B
 
 def run_synteny_identification(dot_plot, species_data_A, species_data_B, chrom_info_A, chrom_info_B, params):
     if 'tandem_windowsize' not in params.keys():
