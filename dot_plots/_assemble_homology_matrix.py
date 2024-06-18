@@ -26,8 +26,8 @@ def assemble_homology_matrix(spA, spB, species_data_A, species_data_B, chrom_inf
             genesB = species_data_B[species_data_B[:,0] == chromB]
             ngenesA = genesA.shape[0]
             ngenesB = genesB.shape[0]
-            MA = np.vstack(ngenesB * [genesA[:,4:5].T])
-            MB = np.hstack(ngenesA * [genesB[:,4:5]])
+            MA = np.vstack(ngenesB * [genesA[:,4:5].T]).astype(int)
+            MB = np.hstack(ngenesA * [genesB[:,4:5]]).astype(int)
             zerosA = 1 - (MA == 0)
             zerosB = 1 - (MB == 0)
             M = (MA == MB).astype(int) * zerosA * zerosB

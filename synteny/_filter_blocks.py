@@ -1,22 +1,31 @@
+
 import numpy as np
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
 from scipy.signal import fftconvolve
-from ._identify_blocks import *
 
-def supported_by_nanosynteny(absolute_block, species_data, nanosynteny_minsize, filter_by_unique_orthogroups = True):
+def supported_by_nanosynteny(block, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize, filter_by_unique_orthogroups = True):
     """
     Input:
-    - absolute_block: numpy array (k X 2), where k is the number of genes in the block. The first (second) column is the absolute index (starting from 1) for species A (species B).
-    - species_data: numpy array (N X 12), species data for either species. Since gene pairs in synteny blocks have the same orthogroup, it doesn't matter which species data array is provided.
+    - block: numpy array (k X 4), where k is the number of genes in the block, in relative coordinates.
+    - species_data_A: numpy array (N X 12), species data for species A.
+    - species_data_B: numpy array (N X 12), species data for species B.
+    - maps_A: [cc_map, inv_cc_map, shift_map, unshift_map], output of create_shift_map(species_data_A, windowsize).
+        - cc_map: gene index -> cc index
+        - inv_cc_map: cc index -> set of gene indices
+        - shift_map: cc index -> compressed gene index
+        - unshift_map: compressed gene index -> cc index
+    - maps_B: [cc_map, inv_cc_map, shift_map, unshift_map], output of create_shift_map(species_data_B, windowsize), see above.
     - nanosynteny_minsize: int, minimum number of genes in a nanosynteny block.
     - filter_by_unique_orthogroups: bool, if True the supporting nanosynteny block must have nanosynteny_minsize unique orthogroups within it for the synteny block in question to be "supported".
     
     Output:
     - supported: bool, is the synteny block supported by nanosynteny?
     """
-    x = absolute_block[:,0].astype(int)
-    y = absolute_block[:,1].astype(int)
+    chromA = block[0,0]
+    chromB = block[0,2]
+    x = block[:,1].astype(int)
+    y = block[:,3].astype(int)
     xdiff = np.abs(np.diff(x))
     ydiff = np.abs(np.diff(y))
     kernel = np.ones(nanosynteny_minsize - 1)
@@ -30,20 +39,24 @@ def supported_by_nanosynteny(absolute_block, species_data, nanosynteny_minsize, 
         return supported
     
     elif filter_by_unique_orthogroups == True:
+        cc_maps, inv_cc_maps, shift_maps, unshift_maps = maps_A
+        inv_cc_map = inv_cc_maps[chromA]
+        unshift_map = unshift_maps[chromA]
         supported_spots = (xconv == nanosynteny_minsize - 1)*(yconv == nanosynteny_minsize - 1).astype(int)
         edges = ((xdiff == 1) * (ydiff == 1)).astype(int)
-        A = np.diag(np.zeros(absolute_block.shape[0])) + np.diag(edges,1) + np.diag(edges,-1)
+        A = np.diag(np.zeros(block.shape[0])) + np.diag(edges,1) + np.diag(edges,-1)
         G = ntx.Graph(A)
         nano_ccs = list(ntx.connected_components(G))
         supported = False
         for nano_cc in nano_ccs:
-            nano_cc_abs = absolute_block[list(nano_cc)][:,0]
-            nano_cc_ogs = np.unique(species_data[nano_cc_abs-1][:,4])
+            nano_cc_genes = block[list(nano_cc)][:,1]
+            species_data_chrom = species_data_A[species_data_A[:,0] == chromA]
+            nano_cc_ogs = np.unique([species_data_chrom[inv_cc_map[unshift_map[int(g)]]-1][0,4] for g in nano_cc_genes])            
             if len(nano_cc_ogs) >= nanosynteny_minsize:
                 supported = True
                 break
-        return supported
-
+        return supported    
+    
 def split_plus_minus_chrom_vs_chrom(blocksAB, minsize=3):
     """
     Take a list of synteny blocks and split them into those with positive and negative slopes.

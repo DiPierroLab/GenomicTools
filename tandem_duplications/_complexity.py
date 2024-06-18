@@ -60,5 +60,5 @@ def add_complexity_info_to_species_data(sp, species_data, chrom_info, entropy_wi
     species_data[:,7] = tandem
     species_data[:,8] = H
     species_data[:,9] = tandem_H
-    labels = 'chromosome name,chromosome number,relative index,absolute index,orthogroup,gene name,MAKER gene label,tandem dup,H-w%i,tandem H-w%i,empty 3,empty 4,empty 5\n'%(entropy_window,entropy_window)
+    labels = 'chromosome name,chromosome number,relative index,absolute index,orthogroup,gene name,MAKER gene label,tandem dup,H-w%i,tandem H-w%i,empty 4,empty 5\n'%(entropy_window,entropy_window)
     return sp, species_data, labels, chrom_info

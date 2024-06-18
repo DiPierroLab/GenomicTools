@@ -1,4 +1,5 @@
 
+from ._block_tools import *
 from ._filter_blocks import *
 from ._identify_blocks import *
 from ._identify_macrosynteny import *

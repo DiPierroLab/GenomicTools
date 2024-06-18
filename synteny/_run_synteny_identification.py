@@ -3,6 +3,7 @@ import numpy as np
 from ._identify_blocks import *
 from ._filter_blocks import *
 from ._convolution_filters import *
+from ._block_tools import *
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
 from GenomicTools.permutations import *
