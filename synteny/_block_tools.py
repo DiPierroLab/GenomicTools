@@ -1,5 +1,6 @@
 
 import numpy as np
+from GenomicTools.tools import *
 
 def block_to_string_relative(block):
     b1 = np.char.add(block[:,0].astype(str),'-')
@@ -40,6 +41,16 @@ def block_palindrome(block):
         indicesA = '-'.join(block[:,1])
         indicesB = '-'.join(block[::-1,3])
         if indicesA == indicesB:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def block_palindromoid(block):
+    if block[0,0] == block[0,2]:
+        gene_intersection = set(block[:,1]).intersection(block[:,3])
+        if len(gene_intersection) > 0:
             return True
         else:
             return False
@@ -88,3 +99,85 @@ def self_diagonal_block(block):
         return True
     else:
         return False
+
+def synteny_overlap(blockA, blockB):
+    if (blockA.shape[1] == 4) and (blockB.shape[1] == 4):
+        if (blockA[0,0] != blockB[0,0]) or (blockA[0,2] != blockB[0,2]):
+            return 0
+        else:
+            x_overlap = len(set(blockA[:,1]).intersection(set(blockB[:,1])))
+            y_overlap = len(set(blockA[:,3]).intersection(set(blockB[:,3])))
+            if (x_overlap > 0) and (y_overlap > 0):
+                return np.min([x_overlap, y_overlap])
+            else:
+                return 0
+    elif (blockA.shape[1] == 2) and (blockB.shape[1] == 2):
+        x_overlap = len(set(blockA[:,0]).intersection(set(blockB[:,0])))
+        y_overlap = len(set(blockA[:,1]).intersection(set(blockB[:,1])))
+        if (x_overlap > 0) and (y_overlap > 0):
+            return np.min([x_overlap, y_overlap])
+        else:
+            return 0
+    else:
+        raise ValueError("blockA and blockB need to be both in absolute or relative coordinates.")
+        
+def return_overlapping_block_pairs(blocks, overlap_threshold):
+    overlaps = []
+    for i in range(len(blocks)):
+        for j in range(i+1,len(blocks)):
+            overlap = synteny_overlap(blocks[i],blocks[j])
+            if (overlap >= overlap_threshold):
+                overlaps.append([i,j,overlap])
+    return np.vstack(overlaps)
+    
+def block_complexity(absolute_block, species_data_A, species_data_B):
+    complexity_A = species_data_A[absolute_block[:,0]-1,7:10]
+    complexity_B = species_data_B[absolute_block[:,1]-1,7:10]
+    return complexity_A, complexity_B
+
+def return_low_complexity(absolute_blocks, species_data_A, species_data_B, entropy_fraction_threshold = .75, entropy_window_size = 10):
+    low_complexity = []
+    threshold = entropy_fraction_threshold * np.log2(entropy_window_size)
+    for n, block in enumerate(absolute_blocks):
+        complexity_A, complexity_B = block_complexity(block, species_data_A, species_data_B)
+        belowA = np.any(complexity_A[:,1].astype(float) < threshold)
+        belowB = np.any(complexity_B[:,1].astype(float) < threshold)
+        if belowA or belowB:
+            low_complexity.append(n)
+    return low_complexity
+
+def convert_synteny_relative_to_absolute_indices(synteny_blocks, chrom_info_A, chrom_info_B):
+    chrom_locs_A = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_info_A.keys()])
+    chrom_locs_B = np.cumsum([0] + [chrom_info_B[key]['size'] for key in chrom_info_B.keys()])
+    if type(synteny_blocks[0][0,0]) in [int,np.int_]:
+        abs_A = {n+1:s for n, s in enumerate(chrom_locs_A[:-1])}
+        abs_B = {n+1:s for n, s in enumerate(chrom_locs_B[:-1])}
+    elif type(synteny_blocks[0][0,0]) in [str,np.str_]:
+        abs_A = {alphanum_sort(chrom_info_A.keys())[n]:s for n, s in enumerate(chrom_locs_A[:-1])}
+        abs_B = {alphanum_sort(chrom_info_B.keys())[n]:s for n, s in enumerate(chrom_locs_B[:-1])}
+    else:
+        raise ValueError("Something is wrong with the format of synteny_blocks.")
+    absolute_blocks = []
+    for block in synteny_blocks:
+        absolute_block = []
+        for b in block:
+            absolute_block.append([abs_A[b[0]]+int(b[1]),abs_B[b[2]]+int(b[3])])
+        absolute_blocks.append(np.vstack(absolute_block))
+    return absolute_blocks
+
+def convert_synteny_absolute_to_relative_indices(synteny_blocks, chrom_info_A, chrom_info_B):
+    chrom_locs_A = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_info_A.keys()])
+    chrom_locs_B = np.cumsum([0] + [chrom_info_B[key]['size'] for key in chrom_info_B.keys()])
+    abs_A = {alphanum_sort(chrom_info_A.keys())[n]:s for n, s in enumerate(chrom_locs_A[:-1])}
+    abs_B = {alphanum_sort(chrom_info_B.keys())[n]:s for n, s in enumerate(chrom_locs_B[:-1])}
+    abs_int_A = {n+1:s for n, s in enumerate(chrom_locs_A[:-1])}
+    abs_int_B = {n+1:s for n, s in enumerate(chrom_locs_B[:-1])}
+    relative_blocks = []
+    for block in synteny_blocks:
+        relative_block = []
+        chromA = np.digitize(block[0,0]-1,chrom_locs_A)
+        chromB = np.digitize(block[0,1]-1,chrom_locs_B)
+        for b in block:
+            relative_block.append([chromA,b[0]-abs_int_A[chromA],chromB,b[1]-abs_int_B[chromB]])
+        relative_blocks.append(np.vstack(relative_block))
+    return relative_blocks

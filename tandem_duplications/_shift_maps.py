@@ -3,7 +3,7 @@ import numpy as np
 import networkx as ntx
 from GenomicTools.tools import *
 
-def create_shift_map(species_data, windowsize):    
+def create_shift_map(species_data, windowsize = 1):    
     """
     Input:
     - species data

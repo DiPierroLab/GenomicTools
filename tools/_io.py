@@ -115,20 +115,27 @@ def save_synteny_blocks(synteny_blocks_file, spA, spB, synteny_blocks, chrom_inf
             labels = ','.join(labels)+'\n'
         else:
             raise ValueError("The labels list/array for synteny blocks must be length 9.")    
-    namesA = list(chrom_info_A.keys())
-    numbersA = [chrom_info_A[chrom]['number'] for chrom in namesA]
-    chrom_num_to_nameA = {numbersA[i]:namesA[i] for i in range(len(namesA))}
-    namesB = list(chrom_info_B.keys())
-    numbersB = [chrom_info_B[chrom]['number'] for chrom in namesB]
-    chrom_num_to_nameB = {numbersB[i]:namesB[i] for i in range(len(namesB))}
+    try:
+        dummy_var = int(synteny_blocks[0][0,0])
+        chrom_int = True
+    except ValueError:
+        chrom_int = False    
+    if chrom_int == True:
+        namesA = list(chrom_info_A.keys())
+        numbersA = [chrom_info_A[chrom]['number'] for chrom in namesA]
+        chrom_num_to_nameA = {numbersA[i]:namesA[i] for i in range(len(namesA))}
+        namesB = list(chrom_info_B.keys())
+        numbersB = [chrom_info_B[chrom]['number'] for chrom in namesB]
+        chrom_num_to_nameB = {numbersB[i]:namesB[i] for i in range(len(namesB))}
     lines = []
     lines.append(','.join([spA,spB])+'\n')
     lines.append(labels)
     for block in synteny_blocks:
         lines.append('#\n')
         str_block = block.astype(str)
-        str_block[:,0] = chrom_num_to_nameA[block[0,0]]
-        str_block[:,2] = chrom_num_to_nameB[block[0,2]]
+        if chrom_int == True:
+            str_block[:,0] = chrom_num_to_nameA[block[0,0]]
+            str_block[:,2] = chrom_num_to_nameB[block[0,2]]
         for line in str_block:
             lines.append(','.join(line)+'\n')
     if gzip_file == True:
