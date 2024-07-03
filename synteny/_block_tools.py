@@ -128,7 +128,7 @@ def return_overlapping_block_pairs(blocks, overlap_threshold):
             overlap = synteny_overlap(blocks[i],blocks[j])
             if (overlap >= overlap_threshold):
                 overlaps.append([i,j,overlap])
-    return np.vstack(overlaps)
+    return overlaps
     
 def block_complexity(absolute_block, species_data_A, species_data_B):
     complexity_A = species_data_A[absolute_block[:,0]-1,7:10]

@@ -27,6 +27,13 @@ def shift_dots(dot_plot, species_data_A, species_data_B, maps_A, maps_B):
     shifted_dots = np.vstack(shifted_dots)
     return shifted_dots
 
+def shift_synteny_blocks(synteny_blocks, species_data_A, species_data_B, maps_A, maps_B):
+    shifted_blocks = []
+    for block in synteny_blocks:
+        shifted_block = shift_dots(block, species_data_A, species_data_B, maps_A, maps_B)
+        shifted_blocks.append(shifted_block)
+    return shifted_blocks
+
 def unshift_synteny_blocks(synteny_blocks, maps_A, maps_B, nanosynteny_minsize):
     if type(synteny_blocks) != list:
         raise ValueError("The input synteny_blocks must be a list of synteny block arrays.")    
