@@ -34,7 +34,7 @@ def interval_overlap(I1, I2):
     if (I1[1] < I2[0]) or (I2[1] < I1[0]):
         return 0
     elif I1[0] == I2[0]:
-        return np.min([I1[1], I2[1]]) - I1[0]
+        return np.min([I1[1], I2[1]]) - I1[0] + 1
     elif I1[1] == I2[1]:
         return I1[1] - np.max([I1[0], I2[0]]) + 1
     elif (I1[0] < I2[0]) and (I1[1] < I2[1]):
