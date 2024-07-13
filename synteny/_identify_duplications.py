@@ -1,6 +1,8 @@
 
 import numpy as np
 import re
+from Bio import Phylo
+from io import StringIO
 from ._identify_blocks import *
 from ._run_synteny_identification import *
 from ._block_tools import *
@@ -307,7 +309,7 @@ def find_duplications_across_all_species(sp_source, all_duplications, all_specie
         
     return duplications_across_all_species
 
-def duplication_lower_bound(sp_source, duplications_across_all_species, all_species_data, gene_tree_data, map_dups_to_species, tree, time_tree):
+def duplication_lower_bound(sp_source, duplications_across_all_species, all_species_data, all_duplications, gene_tree_data, map_dups_to_species, tree, time_tree):
     N = len(duplications_across_all_species[sp_source])
     absolute_duplications_sp = convert_synteny_relative_to_absolute_indices(all_duplications[sp_source],
                                                                             all_species_data[sp_source]['chrom_info'],
@@ -381,3 +383,77 @@ def match_duplicate_regions_across_species(duplications_all_species, timings, sp
                 matched_duplications[r][sp_target]['timing'] = timings[r]
                 matched_duplications[r][sp_target]['matches'] = matches
     return matched_duplications
+
+def parse_tree(tree_string):
+    tree = Phylo.read(StringIO(tree_string),'newick')
+    return tree
+
+def gene_coalescence_species(geneA, geneB, og, gene_tree, map_dups_to_species, species_tree):
+    gene_mrca = gene_tree.common_ancestor(geneA,geneB) 
+    key = (og, gene_mrca.name)
+    if key in map_dups_to_species.keys():
+        gene_mrca_sp, support = map_dups_to_species[key]
+        support = float(support)
+    else:
+        gene_mrca_sp = 'Undetermined'
+        support = np.nan
+    return gene_mrca_sp, support
+
+def earliest_supported(syntenic_duplication, support_threshold = .5):
+    names = syntenic_duplication[:,0]
+    supports = np.nan_to_num(syntenic_duplication[:,1].astype(float))
+    well_supported = (supports >= support_threshold)
+    if np.sum(well_supported) == 0:
+        support_threshold = np.max(supports)
+        well_supported = (supports >= support_threshold)
+    well_supported_names = np.unique(names[well_supported])
+    if 'Undetermined' in well_supported_names:
+        well_supported_names.remove('Undetermined')
+    terminals = [s for s in well_supported_names if '_' in s]
+    non_terminals = list(set(well_supported_names) - set(terminals))
+    if len(non_terminals) == 0:
+        if len(terminals) > 1:
+            raise ValueError("Something weird is going on...")
+        else:
+            name = terminals[0]
+    else:
+        oldest_num = np.min([int(s.lstrip('N')) for s in non_terminals])
+        name = 'N' + str(int(oldest_num))
+    return name
+
+def synteny_duplication_timing_with_gene_tree(duplications, sp, species_data, chrom_info, gene_trees, species_tree, map_dups_to_species, filter_earliest_supported = True):
+    if duplications[0].shape[1] == 4:
+        absolute_duplications = convert_synteny_relative_to_absolute_indices(duplications,chrom_info,chrom_info)
+    elif duplications[0].shape[1] == 2:
+        absolute_duplications = duplications
+    else:
+        raise ValueError("The format of the duplications input is not supported.")
+    gene_tree_duplications_timings = []
+    for duplication in absolute_duplications:
+        genesA = species_data[duplication[:,0]-1]
+        genesB = species_data[duplication[:,1]-1]
+        gene_tree_duplication_timings = []
+        for n in range(duplication.shape[0]):
+            og_genes = 'OG'+str(int(genesA[n,4])-1).zfill(7)
+            if og_genes in gene_trees.keys():
+                gene_tree = parse_tree(gene_trees[og_genes])
+                geneA = genesA[n,5]
+                for gene in gene_tree.get_terminals():
+                    if geneA in gene.name:
+                        geneA = gene.name
+                        break
+                geneB = genesB[n,5]
+                for gene in gene_tree.get_terminals():
+                    if geneB in gene.name:
+                        geneB = gene.name
+                        break
+                timing, support = gene_coalescence_species(geneA,geneB,og_genes,gene_tree,map_dups_to_species,species_tree)
+                gene_tree_duplication_timings.append([timing.split('.')[0],support])
+            else:
+                gene_tree_duplication_timings.append([sp, 1.0])
+        timings_array = np.vstack(gene_tree_duplication_timings)
+        if filter_earliest_supported == True:
+            gene_tree_duplications_timings.append(earliest_supported(timings_array))
+        else:
+            gene_tree_duplications_timings.append(timings_array)
+    return gene_tree_duplications_timings
