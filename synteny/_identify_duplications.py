@@ -146,22 +146,23 @@ def merge_all_overlapping(og_indices):
     og_indices = {k:og_indices[k] for k in og_indices.keys()}
     shifts = np.sort(list(og_indices.keys()))
     for s in shifts[:-1]:
-        ns1 = len(og_indices[s])
-        ns2 = len(og_indices[s+1])                         
-        remove_s1 = []
-        remove_s2 = []
-        add_s2 = []
-        for i in range(ns1):
-            for j in range(ns2):
-                overlap = merge_overlapping_regions(og_indices[s][i],og_indices[s+1][j])
-                if len(overlap) > 0:
-                    remove_s1.append(i)
-                    remove_s2.append(j)
-                    add_s2.append(overlap)
-                    break
-        og_indices[s] = [list(og_indices[s][i]) for i in range(ns1) if i not in remove_s1]
-        og_indices[s+1] = [list(og_indices[s+1][i]) for i in range(ns2) if i not in remove_s2]
-        og_indices[s+1] += add_s2
+        if s+1 in og_indices.keys():
+            ns1 = len(og_indices[s])
+            ns2 = len(og_indices[s+1])          
+            remove_s1 = []
+            remove_s2 = []
+            add_s2 = []
+            for i in range(ns1):
+                for j in range(ns2):
+                    overlap = merge_overlapping_regions(og_indices[s][i],og_indices[s+1][j])
+                    if len(overlap) > 0:
+                        remove_s1.append(i)
+                        remove_s2.append(j)
+                        add_s2.append(overlap)
+                        break
+            og_indices[s] = [list(og_indices[s][i]) for i in range(ns1) if i not in remove_s1]
+            og_indices[s+1] = [list(og_indices[s+1][i]) for i in range(ns2) if i not in remove_s2]
+            og_indices[s+1] += add_s2
                 
     return og_indices
 
@@ -315,42 +316,82 @@ def find_duplications_across_all_species(sp_source, all_duplications, all_specie
         
     return duplications_across_all_species
 
+def get_species_time_to_mrca(spA, spB, tree, time_tree):
+    time_tree_sp = set([term.name for term in time_tree.get_terminals()])
+    C = tree.common_ancestor(spA,spB)
+    a = C.name
+    if len(C) == 0:
+        if spA == spB:
+            t = 0
+        else:
+            raise ValueError("Odd species tree behavior...")
+    elif len(C) == 2:
+        terms1 = set([term.name for term in C[0].get_terminals()])
+        terms2 = set([term.name for term in C[1].get_terminals()])
+        set1 = time_tree_sp.intersection(terms1)
+        set2 = time_tree_sp.intersection(terms2)
+        if (len(set1) == 0) or (len(set2) == 0):
+            t = np.nan
+        else:
+            s1 = list(set1)[0]
+            s2 = list(set2)[0]
+            t = time_tree.distance(s1,s2)/2
+    else:
+        raise ValueError("Species tree is not binary...")
+    return a, t
+
+def get_time_to_ancestor(ancestor, tree, time_tree):
+    time_tree_sp = set([term.name for term in time_tree.get_terminals()])
+    C = list(tree.find_clades(ancestor))[0]
+    a = C.name
+    if len(C) == 0:
+        t = 0
+    elif len(C) == 2:
+        terms1 = set([term.name for term in C[0].get_terminals()])
+        terms2 = set([term.name for term in C[1].get_terminals()])
+        set1 = time_tree_sp.intersection(terms1)
+        set2 = time_tree_sp.intersection(terms2)
+        if (len(set1) == 0) or (len(set2) == 0):
+            t = np.nan
+        else:
+            s1 = list(set1)[0]
+            s2 = list(set2)[0]
+            t = time_tree.distance(s1,s2)/2
+    else:
+        raise ValueError("Species tree is not binary...")
+    return a, t
+
 def duplication_lower_bound(sp_source, duplications_across_all_species, all_species_data, all_duplications, gene_tree_data, map_dups_to_species, tree, time_tree):
     N = len(duplications_across_all_species[sp_source])
     absolute_duplications_sp = convert_synteny_relative_to_absolute_indices(all_duplications[sp_source],
                                                                             all_species_data[sp_source]['chrom_info'],
                                                                             all_species_data[sp_source]['chrom_info'])
     merged_duplications_sp, merge_map = merge_duplicate_regions(absolute_duplications_sp,all_species_data[sp_source]['species_data'])
-    timings_sp = synteny_duplication_timing_with_gene_tree(merged_duplications_sp, sp_source, 
-                                                           all_species_data[sp_source]['species_data'], 
+    timings_sp = synteny_duplication_timing_with_gene_tree(merged_duplications_sp, sp_source,
+                                                           all_species_data[sp_source]['species_data'],
                                                            all_species_data[sp_source]['chrom_info'],
-                                                           gene_tree_data, tree, map_dups_to_species, 
+                                                           gene_tree_data, tree, map_dups_to_species,
                                                            filter_earliest_supported=True)
-    
-    time_tree_sp = [term.name for term in time_tree.get_terminals()]
+
     timings = {}
     for i in range(N):
         n_copies_i = {sp:duplications_across_all_species[sp][i]['n_matches'] for sp in duplications_across_all_species.keys()}
-        dup_sp_dlcpar = timings_sp[i]
+        dup_sp_dlcpar, dup_time_dlcpar = get_time_to_ancestor(timings_sp[i], tree, time_tree)
         dup_sp_synteny = sp_source
-        dup_time_synteny = 0   
-        dup_time_dlcpar = 0
+        dup_time_synteny = 0
         for sp in n_copies_i.keys():
-            ancestor = tree.common_ancestor(sp_source,sp).name
-            if (ancestor == dup_sp_dlcpar) and (sp in time_tree_sp):
-                dup_time_dlcpar = time_tree.distance(sp_source,sp) / 2
-            if (n_copies_i[sp] > 1) and (sp in time_tree_sp):
-                t = time_tree.distance(sp_source,sp) / 2
+            if n_copies_i[sp] > 1:
+                ancestor, t = get_species_time_to_mrca(sp_source, sp, tree, time_tree)
                 if t > dup_time_synteny:
                     dup_sp_synteny = ancestor
                     dup_time_synteny = t
-        
+
         timings[i] = {}
         timings[i]['time_synteny'] = dup_time_synteny
         timings[i]['node_synteny'] = dup_sp_synteny
         timings[i]['time_DLCpar'] = dup_time_dlcpar
         timings[i]['node_DLCpar'] = dup_sp_dlcpar
-        
+
     return timings
 
 def match_duplicate_regions(duplicate_regions_i_source, duplicate_regions_i_target, sp_source, sp_target):
