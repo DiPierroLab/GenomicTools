@@ -128,20 +128,26 @@ def select_best_regions_all(og_indices):
         og_indices_selected[k] = select_best_regions(og_indices[k])
     return og_indices_selected
     
-def merge_overlapping_regions(indicesA, indicesB):
-    if len(indicesA) != len(indicesB):
-        raise ValueError("The two index sets must be the same length.")
-    if np.all(np.array(indicesA[1:]) == np.array(indicesB[:-1])):
-        return list(indicesA) + [indicesB[-1]]
+def merge_overlapping_regions(indicesA, indicesB): 
+    lenA = len(indicesA)
+    lenB = len(indicesB)
+    if lenA <= lenB:
+        indexA = 1
+        indexB = lenA - lenB - 1
+    else:
+        indexA = lenA - lenB + 1
+        indexB = -1
+    if np.all(np.array(indicesA[indexA:]) == np.array(indicesB[:indexB])):
+        return list(indicesA) + list(indicesB[indexB:])
     else:
         return []
-
+            
 def merge_all_overlapping(og_indices):
     og_indices = {k:og_indices[k] for k in og_indices.keys()}
     shifts = np.sort(list(og_indices.keys()))
     for s in shifts[:-1]:
         ns1 = len(og_indices[s])
-        ns2 = len(og_indices[s+1])
+        ns2 = len(og_indices[s+1])                         
         remove_s1 = []
         remove_s2 = []
         add_s2 = []
@@ -156,7 +162,7 @@ def merge_all_overlapping(og_indices):
         og_indices[s] = [list(og_indices[s][i]) for i in range(ns1) if i not in remove_s1]
         og_indices[s+1] = [list(og_indices[s+1][i]) for i in range(ns2) if i not in remove_s2]
         og_indices[s+1] += add_s2
-            
+                
     return og_indices
 
 def match_to_gene_indices(og_sequence, match, ogs_chrom_str, species_ogs_chrom):
@@ -322,7 +328,7 @@ def duplication_lower_bound(sp_source, duplications_across_all_species, all_spec
                                                            filter_earliest_supported=True)
     
     time_tree_sp = [term.name for term in time_tree.get_terminals()]
-    lower_bounds = {}
+    timings = {}
     for i in range(N):
         n_copies_i = {sp:duplications_across_all_species[sp][i]['n_matches'] for sp in duplications_across_all_species.keys()}
         dup_sp_dlcpar = timings_sp[i]
@@ -372,6 +378,8 @@ def match_duplicate_regions_across_species(duplications_all_species, timings, sp
     matched_duplications = {}
     for r in region_indices:
         matched_duplications[r] = {}
+        matched_duplications[r]['timing'] = timings[r]
+        matched_duplications[r]['matches'] = {}
         source_regions = duplications_all_species[sp_source][r]
         for sp_target in sp_list:
             target_regions = duplications_all_species[sp_target][r]
@@ -379,9 +387,7 @@ def match_duplicate_regions_across_species(duplications_all_species, timings, sp
                 continue
             else:
                 matches = match_duplicate_regions(source_regions, target_regions, sp_source, sp_target)
-                matched_duplications[r][sp_target] = {}
-                matched_duplications[r][sp_target]['timing'] = timings[r]
-                matched_duplications[r][sp_target]['matches'] = matches
+                matched_duplications[r]['matches'][sp_target] = matches
     return matched_duplications
 
 def parse_tree(tree_string):
