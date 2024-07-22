@@ -6,11 +6,11 @@ from ._filter_blocks import *
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
 
-def find_nanosynteny_chromosome_pair(condensed_dots, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize):
+def find_nanosynteny_chromosome_pair(condensed_dots, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support = True):
     nano_dots = get_nano_dots(condensed_dots, nanosynteny_minsize, chrom_info_A, chrom_info_B)
     if nano_dots.shape[0] > 0:
         Gm, Gp = create_chromosome_pair_dot_dags(nano_dots, 1)
-        blocks = identify_blocks_chrom_pair(nano_dots, Gm, Gp, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize)
+        blocks = identify_blocks_chrom_pair(nano_dots, Gm, Gp, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support)
     else:
         blocks = []
     return blocks
@@ -23,7 +23,7 @@ def find_microsynteny_chromosome_pair(condensed_dots, nanosynteny_blocks, max_di
         blocks = []
     return blocks
     
-def identify_blocks_chrom_pair(condensed_dots, Gm, Gp, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize):
+def identify_blocks_chrom_pair(condensed_dots, Gm, Gp, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support = True):
     chromsA = np.unique(condensed_dots[:,0])
     chromsB = np.unique(condensed_dots[:,2])
     if (chromsA.shape[0] != 1) or (chromsB.shape[0] != 1):
@@ -42,7 +42,10 @@ def identify_blocks_chrom_pair(condensed_dots, Gm, Gp, species_data_A, species_d
             block_ind = ntx.dag_longest_path(G_block_p)
             if len(block_ind) >= nanosynteny_minsize:
                 block = condensed_dots[np.array(block_ind)]
-                supported = supported_by_nanosynteny(block, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize)
+                if check_for_nanosynteny_support:
+                    supported = supported_by_nanosynteny(block, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize)
+                else:
+                    supported = True
                 if supported:
                     col1 = np.array(block.shape[0] * [chromA]).reshape([block.shape[0],1])
                     col2 = block[:,1:2].astype(int)
@@ -56,7 +59,10 @@ def identify_blocks_chrom_pair(condensed_dots, Gm, Gp, species_data_A, species_d
             block_ind = ntx.dag_longest_path(G_block_m)
             if len(block_ind) >= nanosynteny_minsize:
                 block = condensed_dots[np.array(block_ind)]
-                supported = supported_by_nanosynteny(block, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize)
+                if check_for_nanosynteny_support:
+                    supported = supported_by_nanosynteny(block, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize)
+                else:
+                    supported = True
                 if supported:
                     col1 = np.array(block.shape[0] * [chromA]).reshape([block.shape[0],1])
                     col2 = block[:,1:2].astype(int)

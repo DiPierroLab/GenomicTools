@@ -28,10 +28,10 @@ def permute_homology_matrix(homology_matrix, species_data_A, species_data_B, per
     dot_matrix = sparse.csr_matrix(sparse.vstack(dot_matrix))
     permuted_dot_matrix = dot_matrix[perm_A,:][:,perm_B]
 
-    rx = pearsonr(np.array(dot_matrix.sum(0))[0,1:],np.array(dot_matrix.sum(0))[0,:-1]).statistic
-    ry = pearsonr(np.array(dot_matrix.sum(1))[1:,0],np.array(dot_matrix.sum(1))[:-1,0]).statistic
-    rx_perm = pearsonr(np.array(permuted_dot_matrix.sum(0))[0,1:],np.array(permuted_dot_matrix.sum(0))[0,:-1]).statistic
-    ry_perm = pearsonr(np.array(permuted_dot_matrix.sum(1))[1:,0],np.array(permuted_dot_matrix.sum(1))[:-1,0]).statistic
+    rx = pearsonr(np.array(dot_matrix.sum(0))[0,1:],np.array(dot_matrix.sum(0))[0,:-1])[0]
+    ry = pearsonr(np.array(dot_matrix.sum(1))[1:,0],np.array(dot_matrix.sum(1))[:-1,0])[0]
+    rx_perm = pearsonr(np.array(permuted_dot_matrix.sum(0))[0,1:],np.array(permuted_dot_matrix.sum(0))[0,:-1])[0]
+    ry_perm = pearsonr(np.array(permuted_dot_matrix.sum(1))[1:,0],np.array(permuted_dot_matrix.sum(1))[:-1,0])[0]
 
     permuted_homology_matrix = copy.deepcopy(homology_matrix)
     for chromA in chromsA:

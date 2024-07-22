@@ -8,7 +8,7 @@ from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
 from GenomicTools.permutations import *
 
-def find_nanosynteny(condensed_dots, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize, verbose = False):
+def find_nanosynteny(condensed_dots, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support = True, verbose = False):
     chromsA = np.unique(condensed_dots[:,0])
     chromsB = np.unique(condensed_dots[:,2])
     blocks = []
@@ -18,7 +18,7 @@ def find_nanosynteny(condensed_dots, species_data_A, species_data_B, chrom_info_
         for chromB in chromsB:
             condensed_dots_AB = condensed_dots[(condensed_dots[:,0] == chromA) * (condensed_dots[:,2] == chromB)]            
             if condensed_dots_AB.shape[0] > 0:
-                blocks += find_nanosynteny_chromosome_pair(condensed_dots_AB, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize)
+                blocks += find_nanosynteny_chromosome_pair(condensed_dots_AB, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support)
             n += 1
             if verbose:
                 print('%i / %i'%(n,N),end='\r',flush=True)
