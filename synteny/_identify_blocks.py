@@ -174,12 +174,16 @@ def create_inter_nanosynteny_dot_dag(dots, G, slope, interblock_bounds, dots_not
     return G_inter, end_nodes
 
 def longest_dag_path(G, source, target):
-    paths = [path for path in ntx.all_simple_paths(G,source=source,target=target) if (source in path) and (target in path)]
-    if len(paths) > 0:
-        longest = np.argmax([len(path) for path in paths])
-        return paths[longest]
+    longest = ntx.dag_longest_path(G)
+    if (source in longest) and (target in longest):
+        return longest
     else:
-        return paths
+        paths = [path for path in ntx.all_simple_paths(G,source=source,target=target) if (source in path) and (target in path)]
+        if len(paths) > 0:
+            longest = np.argmax([len(path) for path in paths])
+            return paths[longest]
+        else:
+            return paths
 
 def block_connection(G, end_nodes, connection_path = 'longest'):
     if connection_path not in ['longest', 'shortest']:
