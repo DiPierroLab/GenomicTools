@@ -9,14 +9,13 @@ from ._block_tools import *
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
 
-def identify_duplications(blocks, species_data, chrom_info, nanosynteny_minsize, unshift_blocks = False):
+def identify_duplications(condensed_blocks, species_data, chrom_info, nanosynteny_minsize, unshift_blocks = False):
     maps = create_shift_map(species_data)
-    blocks = shift_synteny_blocks(blocks, species_data, species_data, maps, maps)
     string_blocks = []
     duplications = []
     palindromes = []
     palindromoids = []
-    for block in blocks:
+    for block in condensed_blocks:
         diagonal_block = self_diagonal_block(block)
         if not diagonal_block:
             bs, bsT, bsTf = block_to_string_relative(block)
