@@ -60,6 +60,33 @@ def get_species_time_to_ancestor(ancestor, tree, time_tree):
         raise ValueError("Species tree is not binary...")
     return name, t
 
+def get_single_node_time_to_mrca(sp, tree, time_tree):
+    time_tree_sp = set([term.name for term in time_tree.get_terminals()])
+    C = list(tree.find_clades(sp))[0]
+    a = C.name
+
+    if len(C) == 0:
+        t = 0
+    else:
+        terms1 = set([term.name for term in C[0].get_terminals()])
+        terms2 = set([term.name for term in C[1].get_terminals()])
+        set1 = time_tree_sp.intersection(terms1)
+        set2 = time_tree_sp.intersection(terms2)
+        if (len(set1) == 0) or (len(set2) == 0):
+            t = np.nan
+        else:
+            s1 = list(set1)[0]
+            s2 = list(set2)[0]
+            t = time_tree.distance(s1,s2)/2
+    return t
+
+def condense_og_sequence(og_sequence):
+    og_sequence_condensed = [og_sequence[0]]
+    for og in og_sequence[1:]:
+        if og != og_sequence_condensed[-1]:
+            og_sequence_condensed.append(og)
+    return og_sequence_condensed
+
 def generate_node_to_time_map(tree, time_tree):
     node_to_time_map = {}
     for node in tree.get_nonterminals() + tree.get_terminals():
