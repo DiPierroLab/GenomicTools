@@ -156,17 +156,17 @@ def duplication_timing_DLCpar(condensed_duplication, sp, all_species_data, gene_
                         sps_to_root = node_to_time_map[gene_mrca_sp]['avg_sps_from_root']
                         time = node_to_time_map[gene_mrca_sp]['avg_time']
                         duplication_node_candidates.append([gene_mrca_sp,sps_to_root,time,support])
-    if len(duplication_node_candidates) > 0:
-        duplication_node_candidates = np.vstack(duplication_node_candidates)
-        supported_condidates = duplication_node_candidates[duplication_node_candidates[:,3].astype(float) >= .5]
-        DLCpar_node, DLCpar_sps_from_root, DLCpar_time, DLCpar_support = supported_condidates[np.argmin(supported_condidates[:,1].astype(float))]
+    duplication_node_candidates = np.vstack(duplication_node_candidates)
+    supported_candidates = duplication_node_candidates[duplication_node_candidates[:,3].astype(float) >= .5]
+    if supported_candidates.shape[0] > 0:
+        DLCpar_node, DLCpar_sps_from_root, DLCpar_time, DLCpar_support = supported_candidates[np.argmin(supported_candidates[:,1].astype(float))]
         DLCpar_success = True
     else:
         DLCpar_node, DLCpar_sps_from_root, DLCpar_time, DLCpar_support = [None, None, None, None]
         DLCpar_success = False
     return DLCpar_success, DLCpar_node, DLCpar_sps_from_root, DLCpar_time, DLCpar_support
 
-def duplication_timing_parsimony(condensed_duplication, sp, all_species_data, node_to_time_map):
+def duplication_timing_parsimony(condensed_duplication, sp, all_species_data, species_tree, node_to_time_map):
     sp_list = list(all_species_data.keys())
     species_data = all_species_data[sp]['species_data']
     chrom = condensed_duplication[0,0]
@@ -191,19 +191,18 @@ def duplication_timing_parsimony(condensed_duplication, sp, all_species_data, no
                 multiple_copy_species.append(spB)
                 break
      
-    ancestor = tree.common_ancestor(multiple_copy_species)
+    ancestor = species_tree.common_ancestor(multiple_copy_species)
     return ancestor.name
 
-def nanosynteny_duplication_timings(condensed_duplications, sp, all_species_data, gene_tree_data, map_dups_to_species, node_to_time_map):
+def nanosynteny_duplication_timing(condensed_duplications, sp, all_species_data, gene_tree_data, species_tree, map_dups_to_species, node_to_time_map):
     nanosynteny_duplication_timing = {}    
     for dn, dup_block in enumerate(condensed_duplications):
         DLCpar_success, DLCpar_node, DLCpar_sps_from_root, DLCpar_time, DLCpar_support = duplication_timing_DLCpar(dup_block, sp, all_species_data, gene_tree_data, map_dups_to_species, node_to_time_map)
-        parsimony_node = duplication_timing_parsimony(dup_block, sp, all_species_data, node_to_time_map)
+        parsimony_node = duplication_timing_parsimony(dup_block, sp, all_species_data, species_tree, node_to_time_map)
         parsimony_time = node_to_time_map[parsimony_node]['avg_time']
         parsimony_sps_from_root = node_to_time_map[parsimony_node]['avg_sps_from_root']
         
         if DLCpar_success:
-            print(DLCpar_sps_from_root, parsimony_sps_from_root)
             if (float(DLCpar_sps_from_root) <= float(parsimony_sps_from_root)):
                 consensus_node = DLCpar_node
                 consensus_time = float(DLCpar_time)
@@ -259,13 +258,14 @@ def microsynteny_duplication_timing(nanosynteny_duplication_timing, condensed_se
                         break
     
     nano_indices = set(nano_dups_indices)
-    links = np.vstack(links)
-    
+    if len(links) > 0:
+        links = np.vstack(links)    
+
     i = 0
     microsynteny_duplication_timing = {}
     micro_dup = [i]
     while len(nano_indices) > 0:
-        if (i in links[:,0]) and (i in nano_indices):
+        if (len(links) > 0) and (i in links[:,0]) and (i in nano_indices):
             j = links[links[:,0] == i][:,1].min()
             micro_dup.append(j)
             nano_indices = nano_indices - {i}
