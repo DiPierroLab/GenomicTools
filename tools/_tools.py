@@ -60,3 +60,7 @@ def get_chrom_info(species_data):
         chrom_info[chrom]['number'] = n + 1
         chrom_info[chrom]['size'] = species_data[species_data[:,0] == chrom].shape[0]
     return chrom_info
+
+def parse_tree(tree_string):
+    tree = Phylo.read(StringIO(tree_string),'newick')
+    return tree
