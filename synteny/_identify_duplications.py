@@ -159,7 +159,7 @@ def duplication_timing_DLCpar(condensed_duplication, sp, all_species_data, gene_
     duplication_node_candidates = np.vstack(duplication_node_candidates)
     supported_candidates = duplication_node_candidates[duplication_node_candidates[:,3].astype(float) >= .5]
     if supported_candidates.shape[0] > 0:
-        earliest_supported = supported_candidates[supported_candidates[:,1].astype(float) == supported_candidates[:,1].float().min()]
+        earliest_supported = supported_candidates[supported_candidates[:,1].astype(float) == supported_candidates[:,1].astype(float).min()]
         DLCpar_node, DLCpar_sps_from_root, DLCpar_time, DLCpar_support = earliest_supported[earliest_supported[:,3].astype(float).argmax()]
     else:
         earliest_nonsupported = duplication_node_candidates[duplication_node_candidates[:,1].astype(float) == duplication_node_candidates[:,1].astype(float).min()]
