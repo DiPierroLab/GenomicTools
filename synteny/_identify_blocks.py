@@ -1,10 +1,47 @@
 
 import numpy as np
 import networkx as ntx
-from ._convolution_filters import *
 from ._filter_blocks import *
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
+
+def get_nano_dots(dots, nanosynteny_minsize, chrom_info_A, chrom_info_B):
+    chromsA = np.unique(dots[:,0])
+    chromsB = np.unique(dots[:,2])
+    if (chromsA.shape[0] != 1) or (chromsB.shape[0] != 1):
+        raise ValueError("The input 'dots' should be all the dots between two chromosomes.")
+    chromA = chromsA[0]
+    chromB = chromsB[0]
+
+    H = np.zeros((chrom_info_A[chromA]['size'],chrom_info_B[chromB]['size']))
+    H[dots[:,1].astype(int)-1,dots[:,3].astype(int)-1] = 1
+    
+    H_nano = nanosynteny_convolve_dot_plot(H,nanosynteny_minsize)
+    xr, yr = np.where(H_nano)
+    nano_dots = np.vstack([np.array(xr.shape[0]*[chromA]),xr+1,np.array(yr.shape[0]*[chromB]),yr+1]).T
+    
+    return nano_dots
+
+def get_nano_neighborhood_dots(dots, nanosynteny_minsize, distance_cutoff, chrom_info_A, chrom_info_B):
+    chromsA = np.unique(dots[:,0])
+    chromsB = np.unique(dots[:,2])
+    if (chromsA.shape[0] != 1) or (chromsB.shape[0] != 1):
+        raise ValueError("The input 'dots' should be all the dots between two chromosomes.")
+    chromA = chromsA[0]
+    chromB = chromsB[0]
+
+    H = np.zeros((chrom_info_A[chromA]['size'],chrom_info_B[chromB]['size']))
+    H[dots[:,1].astype(int)-1,dots[:,3].astype(int)-1] = 1
+    
+    H_nano = nanosynteny_convolve_dot_plot(H,nanosynteny_minsize)
+    xr, yr = np.where(H_nano)
+    nano_dots = np.vstack([np.array(xr.shape[0]*[chromA]),xr+1,np.array(yr.shape[0]*[chromB]),yr+1]).T
+    
+    H_nano_neighborhood = convolve_deconvolve_maxdist_dot_plot(H_nano, H, distance_cutoff)
+    xn, yn = np.where(H_nano_neighborhood)
+    nano_neighborhood_dots = np.vstack([np.array(xn.shape[0]*[chromA]),xn+1,np.array(yn.shape[0]*[chromB]),yn+1]).T
+    
+    return nano_dots, nano_neighborhood_dots
 
 def find_nanosynteny_chromosome_pair(condensed_dots, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support = True):
     nano_dots = get_nano_dots(condensed_dots, nanosynteny_minsize, chrom_info_A, chrom_info_B)
