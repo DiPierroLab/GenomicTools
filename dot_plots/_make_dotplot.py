@@ -6,6 +6,39 @@ from matplotlib.patches import Rectangle
 from GenomicTools.tools import *
 
 def make_dot_plot_figure(dot_plot, chrom_info_A, chrom_info_B, synteny_blocks = None, chrom_labels_A = None, chrom_labels_B = None, xlim = None, ylim = None, xfrac_lim = None, yfrac_lim = None, zoom_specific = None, highlight_zoom = False, label1 = None, label2 = None, dot_colors = None, dot_cmap = 'copper', cbar_label = '', cbar_shrink = .35, cbar_pad = .02, block_color = 'r', min_block_size = 2, fontsize = 24, line_width = 2, dot_size = .5, macrosynteny = None, macrosynteny_color = 'k', ax = None):
+    """
+    This function creates a dot plot figure using matplotlib.
+
+    Input: 
+    - dot_plot: numpy array (N X 9), dot plot of species A vs. B
+    - chrom_info_A: dictionary, chromosome information for species A
+    - chrom_info_B: dictionary, chromosome information for species B
+    - synteny_blocks: (default: None) list of numpy arrays (N X 4), 
+    - chrom_labels_A: (default: None) list of strings, labels for chromosomes of species A. "None" labels chromosomes by number.
+    - chrom_labels_B: (default: None) list of strings, labels for chromosomes of species B. "None" labels chromosomes by number.
+    - xlim: (default: None)
+    - ylim: (default: None)
+    - xfrac_lim: (default: None)
+    - yfrac_lim: (default: None)
+    - zoom_specific: (default: None)
+    - highlight_zoom: (default: False)
+    - label1: (default: None) axis label for species A
+    - label2: (default: None) axis label for species B
+    - dot_colors: (default: None) 
+    - dot_cmap: (default: 'copper')
+    - cbar_label: (default: '')
+    - cbar_shrink: (default: .35)
+    - cbar_pad: (default: .02)
+    - block_color: (default: 'r')
+    - min_block_size: (default: 2)
+    - fontsize: (default: 24)
+    - line_width: (default: 2)
+    - dot_size: (default: .5)
+    - macrosynteny: (default: None) 
+    - macrosynteny_color: (default: 'k') color
+    - ax: (default: None) matplotlib axis to plot in. "None" creates a new axis.
+    """
+    
     size_x = 20
     chrom_names_A = alphanum_sort(chrom_info_A.keys()) 
     chrom_names_B = alphanum_sort(chrom_info_B.keys())
