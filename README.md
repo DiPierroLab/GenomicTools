@@ -8,7 +8,7 @@ See our paper (https://doi.org/10.1101/2025.04.03.647042) for details on how we'
 
 See GenomicTools/examples/ for an example of running APES to infer microsynteny between the human and mouse genomes.
 
-## Input formats:
+## Data formats:
 
 Our workflow depends on a few standardized data structures, which we describe here.
 
