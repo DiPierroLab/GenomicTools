@@ -3,6 +3,17 @@ import numpy as np
 from GenomicTools.tools import *
 
 def block_to_string_relative(block):
+    """
+    Convert a synteny block in relative indices (with chromosome names and indices relative to chromosomes) into strings.
+
+    Input:
+        - block: N X 4 array, synteny block
+
+    Output:
+        - bs: string, synteny block with pairs of genes are separated by '_'
+        - bsT: string, synteny block with species swapped and with pairs of genes are separated by '_'
+        - bsTf: string, synteny block with species swapped, in opposite order, and with pairs of genes are separated by '_'
+    """
     b1 = np.char.add(block[:,0].astype(str),'-')
     b2 = np.char.add(b1,block[:,1].astype(str))
     b3 = np.char.add(block[:,2].astype(str),'-')
@@ -22,6 +33,17 @@ def block_to_string_relative(block):
     return bs, bsT, bsTf
 
 def block_to_string_absolute(block):
+    """
+    Convert a synteny block in absolute indices (unique indices for all genes) into strings.
+
+    Input:
+        - block: N X 2 array, synteny block
+
+    Output:
+        - bs: string, synteny block with pairs of genes are separated by '_'
+        - bsT: string, synteny block with species swapped and with pairs of genes are separated by '_'
+        - bsTf: string, synteny block with species swapped, in opposite order, and with pairs of genes are separated by '_'
+    """
     b1 = np.char.add(block[:,0].astype(str),'-')
     b2 = np.char.add(b1,block[:,1].astype(str))
     bs = '_'.join(b2)
@@ -37,6 +59,15 @@ def block_to_string_absolute(block):
     return bs, bsT, bsTf
 
 def block_palindrome(block):
+    """
+    Is the synteny block a palindrome when comparing a species with itself?
+
+    Input:
+        - block: N X 4 array, synteny block in relative indices
+
+    Output:
+        - palindrome: boolean
+    """
     if block[0,0] == block[0,2]:
         indicesA = '-'.join(block[:,1])
         indicesB = '-'.join(block[::-1,3])
@@ -48,6 +79,15 @@ def block_palindrome(block):
         return False
 
 def block_palindromoid(block):
+    """
+    Is the synteny block a palindromoid (is it matching a region partially with itself) when comparing a species with itself?
+
+    Input:
+        - block: N X 4 array, synteny block in relative indices
+
+    Output:
+        - palindromoid: boolean
+    """
     if block[0,0] == block[0,2]:
         gene_intersection = set(block[:,1]).intersection(block[:,3])
         if len(gene_intersection) > 0:
@@ -58,6 +98,15 @@ def block_palindromoid(block):
         return False
 
 def blocks_symmetric(blocks):
+    """
+    For a set of synteny blocks, which blocks have their species-swapped or order-reversed counterpart in the set?
+
+    Input:
+        - blocks: list of N X 4 array, synteny blocks in relative indices
+
+    Output:
+        - symm: list of boolean, is swapped or flipped counterpart in the set of blocks?
+    """
     n_block_columns = blocks[0].shape[1]
     string_blocks = []
     transpose_string_blocks = []
@@ -86,6 +135,15 @@ def blocks_symmetric(blocks):
     return symm
 
 def self_diagonal_block(block):
+    """
+    Is a synteny block found by comparing a genome to itself just mathching genes with themselves?
+    
+    Input:
+        - block: N X 4 array, synteny block in relative indices
+
+    Output:
+        - is_self_diagonal: boolean
+    """
     n_block_columns = block.shape[1]
     if n_block_columns == 4:
         A0 = np.char.add(block[:,0],'-')
@@ -101,6 +159,17 @@ def self_diagonal_block(block):
         return False
 
 def synteny_overlap(blockA, blockB):
+    """
+    In a comparison of two genomes, how much do two synteny blocks overlap? The input can be in either relative
+    or absolute indices, but must be consistent between the two blocks.
+
+    Input:
+        - blockA: N X 4 array or N X 2 array, synteny block in relative indices or absolute indices
+        - blockB: N X 4 array or N X 2 array, synteny block in relative indices or absolute indices
+
+    Output:
+        - overlap: integer, number of genes overlapping between the two blocks
+    """
     if (blockA.shape[1] == 4) and (blockB.shape[1] == 4):
         if (blockA[0,0] != blockB[0,0]) or (blockA[0,2] != blockB[0,2]):
             return 0
@@ -122,6 +191,16 @@ def synteny_overlap(blockA, blockB):
         raise ValueError("blockA and blockB need to be both in absolute or relative coordinates.")
         
 def return_overlapping_block_pairs(blocks, overlap_threshold):
+    """
+    For a set of synteny blocks, return all overlapping pairs.
+
+    Input:
+        - blocks: list of N X 4 array, synteny blocks in relative indices
+        - overlap_threshold: integer, how many genes must two blocks overlap by to be "overlapping"?
+
+    Output:
+        - overlaps: list of arrays with three elements, the indices of the two overlapping blocks and how many genes they overlap by
+    """
     overlaps = []
     for i in range(len(blocks)):
         for j in range(i+1,len(blocks)):
@@ -131,11 +210,36 @@ def return_overlapping_block_pairs(blocks, overlap_threshold):
     return overlaps
     
 def block_complexity(absolute_block, species_data_A, species_data_B):
+    """
+    Return complexity information from a synteny block in absolute indices.
+
+    Input:
+        - absolute block: N X 2 array, synteny block in absolute indices
+        - species_data_A: N X 12 array, species data array with complexity information added for species A
+        - species_data_B: N X 12 array, species data array with complexity information added for species B
+
+    Output:
+        - complexity_A: N X 3 array, complexity information for synteny block genes in species A
+        - complexity_B: N X 3 array, complexity information for synteny block genes in species B
+    """
     complexity_A = species_data_A[absolute_block[:,0]-1,7:10]
     complexity_B = species_data_B[absolute_block[:,1]-1,7:10]
     return complexity_A, complexity_B
 
 def return_low_complexity(absolute_blocks, species_data_A, species_data_B, entropy_fraction_threshold = .75, entropy_window_size = 10):
+    """
+    For a set of synteny blocks in absolute indices, return low complexity blocks.
+
+    Input:
+        - absolute_blocks: list of N X 2 arrays, where N varies from block to block
+        - species_data_A: N X 12 array, species data array with complexity information added for species A
+        - species_data_B: N X 12 array, species data array with complexity information added for species B
+        - entropy_fraction_threshold: float, threshold for Shannon entropy below which a block is "low complexity" (Default = .75)
+        - entropy_window_size: integer, window size with which to calculate average sliding window entropy (Default = 10)
+
+    Output:
+        - low_complexity: list of integers, block indices with low complexity
+    """
     low_complexity = []
     threshold = entropy_fraction_threshold * np.log2(entropy_window_size)
     for n, block in enumerate(absolute_blocks):
@@ -147,6 +251,17 @@ def return_low_complexity(absolute_blocks, species_data_A, species_data_B, entro
     return low_complexity
 
 def convert_synteny_relative_to_absolute_indices(synteny_blocks, chrom_info_A, chrom_info_B):
+    """
+    Convert syntney blocks in relative indices to absolute indices.
+
+    Input:
+        - synteny_blocks: list of N X 4 arrays, synteny blocks in relative indices
+        - chrom_info_A: dictionary, chromosome information for species A
+        - chrom_info_B: dictionary, chromosome information for species B
+
+    Output:
+        - absolute blocks: list of N X 2 arrays, synteny blocks in absolute indices
+    """
     chrom_locs_A = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_info_A.keys()])
     chrom_locs_B = np.cumsum([0] + [chrom_info_B[key]['size'] for key in chrom_info_B.keys()])
     if type(synteny_blocks[0][0,0]) in [int,np.int_]:
@@ -166,6 +281,17 @@ def convert_synteny_relative_to_absolute_indices(synteny_blocks, chrom_info_A, c
     return absolute_blocks
 
 def convert_synteny_absolute_to_relative_indices(synteny_blocks, chrom_info_A, chrom_info_B):
+    """
+    Convert synteny blocks in absolute indices to relative indices.
+
+    Input:
+        - synteny_blocks: list of N X 2 arrays, synteny blocks in absolute indices
+        - chrom_info_A: dictionary, chromosome information for species A
+        - chrom_info_B: dictionary, chromosome information for species B
+
+    Output:
+        - relative blocks: list of N X 4 arrays, synteny blocks in relative indices
+    """
     chrom_locs_A = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_info_A.keys()])
     chrom_locs_B = np.cumsum([0] + [chrom_info_B[key]['size'] for key in chrom_info_B.keys()])
     abs_A = {alphanum_sort(chrom_info_A.keys())[n]:s for n, s in enumerate(chrom_locs_A[:-1])}
