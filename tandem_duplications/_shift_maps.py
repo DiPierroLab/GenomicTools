@@ -6,15 +6,15 @@ from GenomicTools.tools import *
 def create_shift_map(species_data, windowsize = 1):    
     """
     Input:
-    - species data: N X 12 array, species data array
-    - windowsize: window for joining genes (1 means two genes in the same orthogroup will be joined 
-                  only if they have indices i and i+1).
+        - species data: N X 12 array, species data array
+        - windowsize: window for joining genes (1 means two genes in the same orthogroup will be joined 
+          only if they have indices i and i+1).
     
     Output:
-    - cc_map: dictionary, gene index -> cc index, this maps gene indices to TDEC indices
-    - inv_cc_map: dictionary, cc index -> set of gene indices, this maps TDEC indices to the set of constituent gene indices
-    - shift_map: dictionary, cc index -> compressed gene index, this maps TDEC indices to "compressed gene indices" (a difference of 1, this is a vestigial feature locked in by contingency)
-    - unshift_map: dictionary, compressed gene index -> cc index, this maps "compressed gene indices" to TDEC indices (a difference of 1, this is a vestigial feature locked in by contingency)
+        - cc_map: dictionary, gene index -> cc index, this maps gene indices to TDEC indices
+        - inv_cc_map: dictionary, cc index -> set of gene indices, this maps TDEC indices to the set of constituent gene indices
+        - shift_map: dictionary, cc index -> compressed gene index, this maps TDEC indices to "compressed gene indices" (a difference of 1, this is a vestigial feature locked in by contingency)
+        - unshift_map: dictionary, compressed gene index -> cc index, this maps "compressed gene indices" to TDEC indices (a difference of 1, this is a vestigial feature locked in by contingency)
     """
     cc_maps = {}
     inv_cc_maps = {}
