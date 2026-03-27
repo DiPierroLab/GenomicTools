@@ -6,6 +6,24 @@ from GenomicTools.tools import *
 from GenomicTools.dot_plots import *
 
 def permute_homology_matrix(homology_matrix, species_data_A, species_data_B, perm_A, perm_B):
+    """
+    Permute a homology matrix (in this case, we mean the specific representation of a dot plot that is a dictionary of
+    csr format matrices for each pair of chromosomes).
+
+    Input:
+        - homology_matrix: dictionary, keys are tuples of chromosome names (strings, one from species A and one from species B)
+        - species_data_A: N X 12 array, species data array for species A
+        - species_data_B: N X 12 array, species data array for species B
+        - perm_A: 1-dimensional array with N elements, permutation of the gene indices for species A
+        - perm_B: 1-dimensional array with N elements, permutation of the gene indices for species B
+
+    Output:
+        - permuted_homology_matrix: dictionary, permuted homology matrix
+        - permuted_species_data_A: N X 12 array, permuted species data array for species A
+        - permuted_species_data_B: N X 12 array, permuted species data array for species B
+        - np.array([rx, ry, rx_perm, ry_perm]): array of floats, pearson correlation measure of unpermuted and permuted matrices.
+          Ignore this...
+    """
     chrom_info_A = get_chrom_info(species_data_A)
     chrom_info_B = get_chrom_info(species_data_B)
 
