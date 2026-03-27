@@ -12,7 +12,7 @@ def convert_dot_plot_to_homology_matrix(dot_plot, chrom_info_A, chrom_info_B):
     containing homology matrices (csr format) for each chromosome pair as values.
 
     Input:
-        - dot_plot: N X 12 dot plot array
+        - dot_plot: N X 9 dot plot array
         - chrom_info_A: chrom info dictionary for species A
         - chrom_info_B: chrom info dictionary for species B
 
@@ -39,13 +39,13 @@ def convert_homology_matrix_to_dot_plot(homology_matrix, labels = None, addition
     Input:
         - homology_matrix: dictionary with tuples of strings as keys, e.g. ('HiC_scaffold_1','HiC_scaffold_14'), and 
           csr format matrices consisting of zeros and ones.
-        - labels: 1-dimensional array of strings, labeling each column of the dot_plot array. 
-          Default: None, this will assume only the first 7 columns have data and will return the labeling
+        - labels: 1-dimensional array of 9 strings, labeling each column of the dot_plot array. 
+          Default: None, this will assume only the first 4 columns have data and will return the labeling
           ['chromosome name A','relative index A','chromosome name B','relative index B','empty 1','empty 2','empty 3','empty 4','empty 5']
         - additional_data: list of 1-dimensional arrays with N entries, for including additional information about homologous pairs of genes.
 
     Output:
-        - dot_plot: N X 12 dot plot array
+        - dot_plot: N X 9 dot plot array
         - labels: 1-dimensional array of strings, labeling each column of the dot_plot array
     """
     dot_plot = []
