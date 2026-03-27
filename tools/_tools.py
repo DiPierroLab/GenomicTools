@@ -49,12 +49,30 @@ def interval_overlap(I1, I2):
         return I2[1] - I1[0] + 1
 
 def block_slope(block):
+    """
+    Find the slope of a synteny block.
+
+    Input:
+        - block: N X 9 array, a synteny block
+
+    Output:
+        - slope: the slope of the synteny block. This only considers the first and last gene indices for both species.
+    """
     x = block[:,1].astype(int)
     y = block[:,3].astype(int)
     slope = (y[-1] - y[0]) / (x[-1] - x[0])
     return slope
 
 def get_chrom_info(species_data):
+    """
+    Create a chromosome information dictionary from a species data array.
+
+    Input:
+        - species_data: N X 12 array, a species data array
+
+    Output:
+        - chrom_info: dictionary, a chromosome information dictionary
+    """
     chrom_info = {}
     chroms = alphanum_sort(np.unique(species_data[:,0]))
     for n, chrom in enumerate(chroms):
@@ -64,5 +82,14 @@ def get_chrom_info(species_data):
     return chrom_info
 
 def parse_tree(tree_string):
+    """
+    Load a newick format phylogenetic tree using Biopython.
+
+    Input:
+        - tree_string: string, path to a newick format phylogenetic tree file
+
+    Output:
+        - tree: a Biopython.Phylo tree object
+    """
     tree = Phylo.read(StringIO(tree_string),'newick')
     return tree
