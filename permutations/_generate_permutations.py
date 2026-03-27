@@ -5,7 +5,16 @@ from GenomicTools.dot_plots import *
 
 def generate_permutations(chrom_info_A, chrom_info_B, swap_batches, batch_size = 1000):
     """
-    It's easy to generate and execute disjoint swaps. For small numbers of random swaps, the probability the swaps will not be disjoint is small. So, for large numbers of swaps, we can generate a series of disjoint swaps, which should be faster than doing one swap at a time.
+    Generate permutations of genomes. It's easy to generate and execute disjoint swaps. For small numbers of random swaps, 
+    the probability the swaps will not be disjoint is small. So, for large numbers of swaps, we can generate a series of 
+    disjoint swaps, which should be faster than doing one swap at a time.
+
+    Input:
+        - chrom_info_A: dictionary, chromosome information for species A
+        - chrom_info_B: dictionary, chromosome information for species B
+        - swap_batches: integer or np.inf, number of batches in which to do permutations. If swap_batches = np.inf, there
+          won't be any batches.
+        - batch_size: integer, number of swaps to do between genes per batch (Default = 1000)
     """
     if (swap_batches != np.inf) and ((type(swap_batches) == int) or (type(swap_batches) == float)):
         swap_batches = int(swap_batches)
