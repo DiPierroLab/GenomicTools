@@ -14,7 +14,7 @@ Our workflow depends on a few standardized data structures, which we describe he
 
 ### Species data:
 
-Each genome annotation is summarized by an N X 12 "species data" array, which is arranged as follows:
+Each genome annotation is summarized by an N X 12 "species data" array, which is saved in .csv (comma separated) files as follows:
 
 Species data (comma separated):
 * Row 1: # Genus_species
@@ -31,7 +31,7 @@ Species data (comma separated):
 	- Column 10: empty
 	- Column 11: empty
 	- Column 12: empty
-* Rows 3-: Data 
+* Rows n (n >= 3): Data 
 
 ### Chromosome information:
 
@@ -44,7 +44,7 @@ To explain, the number of keys in "first layer" of the dictionary is equal to th
 
 ### Dot plot / homology matrix:
 
-Each comparison of a pair of genomes is summarized by an N X 9 "dot plot" array. We use "homology matrix" synonymously with "dot plot" - "dot plot" seems to imply an actual plot rather than a data structure, but we use it anyway in this context. These arrays are arranged as follows:
+Each comparison of a pair of genomes is summarized by an N X 9 "dot plot" array. We use "homology matrix" synonymously with "dot plot" - "dot plot" seems to imply an actual plot rather than a data structure, but we use it anyway in this context. These arrays are saved as follows in .csv (comma separated) files:
 	
 Dot plot files (comma separated):
 * Row 1: # Genus_species A, Genus_species B
@@ -58,4 +58,23 @@ Dot plot files (comma separated):
 	- Column 7: empty
 	- Column 8: empty
 	- Column 9: empty
-* Rows 3-: Data
+* Rows n (n >= 3): Data
+
+### Synteny blocks:
+
+From a dot plot, we use APES to estimate a set of "nanosynteny" (perfectly conserved gene order) or microsynteny blocks. We represent synteny blocks as a list of N X 9 arrays, where N varies from block to block. These arrays are saved as follows in .csv files:
+	
+Dot plot files (comma separated):
+* Row 1: # Genus_species A, Genus_species B
+* Row 2: # column labels
+	- Column 1: chromosome name A
+	- Column 2: relative index A
+	- Column 3: chromosome name B
+	- Column 4: relative index B
+	- Column 5: empty
+	- Column 6: empty
+	- Column 7: empty
+	- Column 8: empty
+	- Column 9: empty
+* Row 2n+1 (n >= 1): # (indicates a new synteny block)
+* Row 2n+2 (n >= 1): synteny block data
