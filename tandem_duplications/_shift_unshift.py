@@ -4,6 +4,22 @@ from scipy.signal import convolve
 from GenomicTools.tools import *
 
 def shift_dots(dot_plot, species_data_A, species_data_B, maps_A, maps_B):
+    """
+    Condense genes into tandem duplication equivalence classes (TDECs). This groups together contiguous sets of adjacent genes
+    with the same orthogroup into one representative TDEC.
+
+    Input:
+        - dot_plot: N X 9 array, dot plot array
+        - species_data_A: N X 12 array, species data for species A
+        - species_data_B: N X 12 array, species data for species B
+        - maps_A: list of 4 dictionaries, shift maps for species A. 
+          See the function "create_shift_map" within tandem_duplications/_shift_maps.py
+        - maps_B: list of 4 dictionaries, shift maps for species B. 
+          See the function "create_shift_map" within tandem_duplications/_shift_maps.py
+
+    Output:
+        - shifted_dots: N X 9 array, dot plot with TDECs instead of genes
+    """
     cc_maps_A, inv_cc_maps_A, shift_maps_A, unshift_maps_A = maps_A
     cc_maps_B, inv_cc_maps_B, shift_maps_B, unshift_maps_B = maps_B
     chromsA = alphanum_sort(np.unique(dot_plot[:,0]))
@@ -28,6 +44,22 @@ def shift_dots(dot_plot, species_data_A, species_data_B, maps_A, maps_B):
     return shifted_dots
 
 def shift_synteny_blocks(synteny_blocks, species_data_A, species_data_B, maps_A, maps_B):
+    """
+    Condense genes into tandem duplication equivalence classes (TDECs) for synteny blocks. This groups together contiguous sets of adjacent genes
+    with the same orthogroup into one representative TDEC.
+
+    Input:
+        - synteny blocks: list of N X 9 array, synteny block list
+        - species_data_A: N X 12 array, species data for species A
+        - species_data_B: N X 12 array, species data for species B
+        - maps_A: list of 4 dictionaries, shift maps for species A. 
+          See the function "create_shift_map" within tandem_duplications/_shift_maps.py
+        - maps_B: list of 4 dictionaries, shift maps for species B. 
+          See the function "create_shift_map" within tandem_duplications/_shift_maps.py
+
+    Output:
+        - shifted_blocks: list of N X 9 array, synteny blocks with TDECs instead of genes
+    """
     shifted_blocks = []
     for block in synteny_blocks:
         shifted_block = shift_dots(block, species_data_A, species_data_B, maps_A, maps_B)
@@ -35,6 +67,20 @@ def shift_synteny_blocks(synteny_blocks, species_data_A, species_data_B, maps_A,
     return shifted_blocks
 
 def unshift_synteny_blocks(synteny_blocks, maps_A, maps_B, nanosynteny_minsize):
+    """
+    Convert a list of condensed synteny blocks (with TDECs) into a list of synteny blocks with genes.
+
+    Input:
+        - synteny blocks: list of N X 9 array, condensed synteny block list (with TDECs)
+        - maps_A: list of 4 dictionaries, shift maps for species A. 
+          See the function "create_shift_map" within tandem_duplications/_shift_maps.py
+        - maps_B: list of 4 dictionaries, shift maps for species B. 
+          See the function "create_shift_map" within tandem_duplications/_shift_maps.py
+        - nanosynteny_minsize: integer, minimum allowed nanosynteny size (usually 3 genes)
+
+    Output:
+        - nshifted_synteny_blocks: list of N X 9 array, synteny blocks with genes instead of TDECs
+    """
     if type(synteny_blocks) != list:
         raise ValueError("The input synteny_blocks must be a list of synteny block arrays.")    
     cc_maps_A, inv_cc_maps_A, shift_maps_A, unshift_maps_A = maps_A
