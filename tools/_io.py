@@ -4,6 +4,18 @@ import gzip
 from ._tools import * 
 
 def load_dot_plot(dot_plot_file):
+    """
+    Load a dot plot file.
+
+    Input:
+        - dot_plot_file: string, path to a dot_plot file
+
+    Output:
+        - spA: string, binomial name of species A in dot plot
+        - spB: string, binomial name of species B in dot plot
+        - dot_plot: N X 9 array, dot plot array
+        - labels: 1-dimensional array with 9 entries, labels for dot plot array columns
+    """
     if dot_plot_file.split('.')[-1] == 'gz':
         with gzip.open(dot_plot_file,'rb') as f:
             lines = f.readlines()
@@ -21,6 +33,18 @@ def load_dot_plot(dot_plot_file):
     return spA, spB, dot_plot, labels
 
 def load_species_data(species_data_file):
+    """
+    Load species data file:
+
+    Input:
+        - species_data_file: string, path to a species data file
+
+    Output:
+        - sp: string, binomial name of species
+        - species_data: N X 12, species data array
+        - labels: 1-dimensional array with 12 entries, labels for species data array columns
+        - chrom_info: dictionary, a chromosome information dictionary
+    """
     if species_data_file.split('.')[-1] == 'gz':
         with gzip.open(species_data_file,'rb') as f:
             lines = f.readlines()
@@ -38,6 +62,18 @@ def load_species_data(species_data_file):
     return sp, species_data, labels, chrom_info
 
 def load_synteny_blocks(synteny_blocks_file):
+    """
+    Load a synteny_blocks list.
+
+    Input:
+        - synteny_blocks_file: string, path to a synteny blocks file
+
+    Output:
+        - spA: string, binomial name of species A in dot plot
+        - spB: string, binomial name of species B in dot plot
+        - synteny_blocks: list of N X 9 arrays, where N can vary by entry. This contains pairs of genes in synteny.
+        - labels: 1-dimensional array with 9 entries, labeling the columns of synteny_blocks entries
+    """
     if synteny_blocks_file.split('.')[-1] == 'gz':
         with gzip.open(synteny_blocks_file,'rb') as f:
             lines = f.readlines()
@@ -66,6 +102,21 @@ def load_synteny_blocks(synteny_blocks_file):
     return spA, spB, synteny_blocks, labels
 
 def save_dot_plot(dot_plot_file, spA, spB, dot_plot, labels = None, gzip_file = False):
+    """
+    Save a dot plot array to a .csv file.
+
+    Input:
+        - dot_plot_file: string, path to a dot plot file name to save to
+        - spA: string, binomial name of species A in dot plot
+        - spB: string, binomial name of species B in dot plot
+        - dot_plot: N X 9 array, dot plot array
+        - labels: 1-dimensional array with 9 entries, labels for dot plot array columns
+          Default: None
+        - gzip_file: boolean, save compressed dotplot file with gzip?
+
+    Output:
+        - Saved dot plot file.
+    """
     if labels is None:
         labels = 'chromosome name A,relative index A,chromosome name B,relative index B,empty 1,empty 2,empty 3,empty 4,empty 5\n'
     else:
@@ -87,6 +138,20 @@ def save_dot_plot(dot_plot_file, spA, spB, dot_plot, labels = None, gzip_file = 
             f.writelines(lines)
 
 def save_species_data(species_data_file, sp, species_data, labels = None, gzip_file = False):
+    """
+    Save a species data array to a .csv file.
+
+    Input:
+        - species_data_file: string, path to a species data file name to save to
+        - sp: string, binomial name of species
+        - species_data: N X 12 array, species data array
+        - labels: 1-dimensional array with 12 entries, labels for species data array columns
+          Default: None
+        - gzip_file: boolean, save compressed dotplot file with gzip?
+
+    Output:
+        - Saved species data file.
+    """
     if labels is None:
         labels = 'chromosome name,chromosome number,relative index,absolute index,orthogroup,gene name,MAKER gene label,empty 1,empty 2,empty 3,empty 4,empty 5\n'
     else:
@@ -108,6 +173,23 @@ def save_species_data(species_data_file, sp, species_data, labels = None, gzip_f
             f.writelines(lines)
 
 def save_synteny_blocks(synteny_blocks_file, spA, spB, synteny_blocks, chrom_info_A, chrom_info_B, labels = None, gzip_file = False):
+    """
+    Save a synteny blocks list to a .csv file.
+
+    Input:
+        - synteny_blocks_file: string, path to a synteny blocks file name to save to
+        - spA: string, binomial name of species A in dot plot
+        - spB: string, binomial name of species B in dot plot
+        - synteny_blocks: list of N X 9 arrays, synteny blocks list
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+        - labels: 1-dimensional array with 9 entries, labels for dot plot array columns
+          Default: None
+        - gzip_file: boolean, save compressed dotplot file with gzip?
+
+    Output:
+        - Saved dot plot file.
+    """
     if labels is None:
         labels = 'chromosome name A,relative index A,chromosome name B,relative index B,empty 1,empty 2,empty 3,empty 4,empty 5\n'
     else:
