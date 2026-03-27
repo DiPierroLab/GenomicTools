@@ -7,6 +7,20 @@ import gzip
 import pickle as pkl
 
 def convert_dot_plot_to_homology_matrix(dot_plot, chrom_info_A, chrom_info_B):
+    """
+    Convert a dot_plot array into a dictionary with pairs of chromosomes as keys and
+    containing homology matrices (csr format) for each chromosome pair as values.
+
+    Input:
+        - dot_plot: N X 12 dot plot array
+        - chrom_info_A: chrom info dictionary for species A
+        - chrom_info_B: chrom info dictionary for species B
+
+    Output:
+        - homology_matrix: dictionary with tuples of strings as keys, e.g. ('HiC_scaffold_1','HiC_scaffold_14'), and 
+        csr format matrices consisting of zeros and ones. This represents homology relationships between genes in the first
+        chromosome (of species A) and the second chromosome (of species B).
+    """
     chromsA = alphanum_sort(list(chrom_info_A.keys()))
     chromsB = alphanum_sort(list(chrom_info_B.keys()))
     homology_matrix = {}
@@ -19,6 +33,21 @@ def convert_dot_plot_to_homology_matrix(dot_plot, chrom_info_A, chrom_info_B):
     return homology_matrix
 
 def convert_homology_matrix_to_dot_plot(homology_matrix, labels = None, additional_data = None):
+    """
+    Convert a homology_matrix dictionary to a dot_plot array.
+
+    Input:
+        - homology_matrix: dictionary with tuples of strings as keys, e.g. ('HiC_scaffold_1','HiC_scaffold_14'), and 
+          csr format matrices consisting of zeros and ones.
+        - labels: 1-dimensional array of strings, labeling each column of the dot_plot array. 
+          Default: None, this will assume only the first 7 columns have data and will return the labeling
+          ['chromosome name A','relative index A','chromosome name B','relative index B','empty 1','empty 2','empty 3','empty 4','empty 5']
+        - additional_data: list of 1-dimensional arrays with N entries, for including additional information about homologous pairs of genes.
+
+    Output:
+        - dot_plot: N X 12 dot plot array
+        - labels: 1-dimensional array of strings, labeling each column of the dot_plot array
+    """
     dot_plot = []
     for chromAB in homology_matrix.keys():
         chromA, chromB = chromAB
@@ -45,6 +74,15 @@ def convert_homology_matrix_to_dot_plot(homology_matrix, labels = None, addition
     return dot_plot, labels
     
 def convert_save_old_species_data_to_new(species_data_file):
+    """
+    Convert old species data format to the new format.
+
+    Input:
+        - species_data_file: string, path of a species data file
+
+    Outout:
+        - A new species data file, saved in the same directory.
+    """
     sp = species_data_file.split('/')[-1].split('-')[0]
     with open(species_data_file,"rb") as f:
         spdat = pkl.load(f)
