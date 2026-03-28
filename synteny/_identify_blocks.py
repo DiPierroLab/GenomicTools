@@ -363,17 +363,18 @@ def create_chromosome_pair_dot_dags(dots, max_distance):
 def create_inter_nanosynteny_dot_dag(dots, G, slope, interblock_bounds, dots_not_in_blocks):
     "LEFT OFF HERE 3/28/26 17:31"
     """
-    Do the same thing as create_chromosome_pair_dot_dags, except between nanosynteny blocks.
+    Do the same thing as create_chromosome_pair_dot_dags, except between nanosynteny blocks (for a pair of chromosomes).
 
     Input:
         - dots: N X 9 array, dot plot array
         - G: networkx Graph object, a directed acyclic graph for dots, either dots in "positive" or "negative" direction
         - slope: integer, positive or negative direction? (either -1 or +1)
-        - interblock_bounds: 
+        - interblock_bounds: tuple of arrays, interblock bounds for a pair of chromosomes
         - dots_not_in_blocks: N X 9 array, dots that are not in nanosynteny blocks
 
     Output:
-        - G_inter, end_nodes:
+        - G_inter: networkx Graph object, directed acyclic graph of nanosynteny blocks
+        - end_nodes: array, node indices for ends of DAGs
     """
     interblock_x, interblock_y = interblock_bounds
     interx_min, interx_max = interblock_x
@@ -393,6 +394,17 @@ def create_inter_nanosynteny_dot_dag(dots, G, slope, interblock_bounds, dots_not
     return G_inter, end_nodes
 
 def longest_dag_path(G, source, target):
+    """
+    Find the longest path through a directed acyclic graph including a source and target node pair.
+
+    Input:
+        - G: networkx Graph object, directed acyclic graph
+        - source: integer, source node index
+        - target: integer, target node index
+
+    Output:
+        - longest_paths: list, node indices within longest paths
+    """
     longest = ntx.dag_longest_path(G)
     if (source in longest) and (target in longest):
         return longest
@@ -405,6 +417,14 @@ def longest_dag_path(G, source, target):
             return paths
 
 def block_connection(G, end_nodes, connection_path = 'longest'):
+    """
+    Are two blocks connected in a directed acyclic graph?
+
+    Input:
+        - G: networkx Graph object, directed acyclic graph of nanosynteny blocks
+        - end_nodes: list of integers, the two block indices
+        - connection_path: string, return the longest or the shortest path? (Default = 'longest')
+    """
     if connection_path not in ['longest', 'shortest']:
         raise ValueError("connection_path must be 'longest' or 'shortest'.")
     inter_cc_ij = list(ntx.weakly_connected_components(G))
@@ -432,6 +452,18 @@ def block_connection(G, end_nodes, connection_path = 'longest'):
     return connected, path
 
 def find_block_distance_matrix(blocks, distance_cutoff):
+    """
+    Create a matrix of distances between nanosynteny blocks.
+
+    Input:
+        - blocks: list of N X 4 arrays, list of nanosynteny blocks, N varies from block to block
+        - distance_cutoff: integer, maximum distance between blocks
+
+    Output:
+        - DA_block_minus: 2-dimensional array, distance matrix for blocks with negative slope
+        - DA_block_plus: 2-dimensional array, distance matrix for blocks with positive slope
+        - interblock_bounds: dictionary of lists, interblock bounds for blocks in each pair of chromosomes
+    """
     D_minus = np.ones([len(blocks),len(blocks)]) * np.inf
     D_plus = np.ones([len(blocks),len(blocks)]) * np.inf
     interblock_bounds = {}
@@ -453,6 +485,16 @@ def find_block_distance_matrix(blocks, distance_cutoff):
     return DA_block_minus, DA_block_plus, interblock_bounds
 
 def find_dots_not_in_blocks(dots, blocks):
+    """
+    Find all the dots that are not in synteny blocks.
+
+    Input:
+        - dots: N X 9 array, dot plot
+        - blocks: list of N X 4 arrays, list of nanosynteny blocks, N varies from block to block 
+
+    Output:
+        - dots_not_in_blocks: N X 9 array, dots that are not in the specified synteny blocks
+    """
     blocks_stacked = np.vstack(blocks)[:,[1,3]].astype(int)
     dots_blocks = []
     for dot in dots:
@@ -466,6 +508,20 @@ def find_dots_not_in_blocks(dots, blocks):
     return dots_not_in_blocks
 
 def connect_blocks(blocks, dots, max_distance, distance_cutoff):
+    """
+    Connect nanosynteny blocks into microsynteny blocks.
+
+    Input:
+        - blocks: list of N X 4 arrays, list of nanosynteny blocks, N varies from block to block 
+        - dots: N X 9 array, dot plot
+        - max_distance: integer, the maximum distance two dots can be from each other and still be incorporated into microsynteny
+          as part of a path between nanosynteny blocks.
+        - distance_cutoff: integer, the maximum distance (in genes) that two nanosyteny blocks can be from each other and be 
+          connected into microsynteny.
+
+    Output:
+        - micro_blocks: list of N X 4 arrays, list of microsynteny blocks, N varies from block to block 
+    """
     dots_not_in_blocks = find_dots_not_in_blocks(dots, blocks)
     DA_block_minus, DA_block_plus, interblock_bounds = find_block_distance_matrix(blocks, distance_cutoff)
 
