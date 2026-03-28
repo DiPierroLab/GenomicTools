@@ -4,8 +4,65 @@ import networkx as ntx
 from ._filter_blocks import *
 from GenomicTools.tools import *
 from GenomicTools.tandem_duplications import *
+from scipy.signal import fftconvolve
 
+def nanosynteny_convolve_dot_plot(M, minsize):
+    """
+    Finds all dots in a homology matrix M that are in nanosynteny blocks with at least minsize genes in them.
+
+    Input:
+        - M: numpy array (N X N), input homology matrix
+        - minsize: int, the minimum number of genes allowed in a nanosynteny block
+
+    Output:
+        - Mr: numpy array (N X N), homology matrix encoding dots in nanosynteny
+    """
+    minsize = int(minsize)
+    k_plus = np.identity(minsize)
+    k_minus = k_plus[::-1]
+    C_plus = np.round(fftconvolve(M,k_plus,mode='full'))
+    C_minus = np.round(fftconvolve(M,k_minus,mode='full'))
+    xp, yp = np.where(C_plus[(minsize-1):,(minsize-1):] == minsize)
+    xm, ym = np.where(C_minus[(minsize-1):,(minsize-1):] == minsize)
+    mr = np.zeros(M.shape)
+    for n_plus in range(xp.shape[0]):
+        mr[xp[n_plus]:(xp[n_plus]+minsize),yp[n_plus]:(yp[n_plus]+minsize)] += k_plus
+    for n_minus in range(xm.shape[0]):
+        mr[xm[n_minus]:(xm[n_minus]+minsize),ym[n_minus]:(ym[n_minus]+minsize)] += k_minus
+    Mr = (mr > 0).astype(int)
+    return Mr
+
+def convolve_deconvolve_maxdist_dot_plot(Mr, M, maxdist):
+    """
+    Identify all dots in the homology matrix M that are within maxdist of any dot in the homology matrix Mr.
+
+    Input:
+        - Mr: numpy array (N X N), a homology matrix encoding active dots (usually those dots in synteny)
+        - M: numpy array (N X N), a homology matrix
+        - maxdist: int, the maximum distance for adding dots. Distance is defined here as max(|x1-x2|,|y1-y2|) for dots (x1,y1) and (x2,y2).
+
+    Output:
+        - H: a homology matrix containing all dots in the homology matrix M that are within maxdist of any dot in the homology matrix Mr
+    """
+    maxdist = 2 * int(maxdist) + 1
+    k_ones = np.ones((maxdist,maxdist))
+    I = np.round(fftconvolve(Mr,k_ones,mode='same'))
+    H = M * (np.abs(I) > 0).astype(int)
+    return H
+    
 def get_nano_dots(dots, nanosynteny_minsize, chrom_info_A, chrom_info_B):
+    """
+    Returns all dots (homologous gene pairs in nanosynteny).
+
+    Input:
+        - dots: N X 9 array, dot plot array
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+
+    Output:
+        - nano_dots: N X 4 array, dots in nanosynteny
+    """
     chromsA = np.unique(dots[:,0])
     chromsB = np.unique(dots[:,2])
     if (chromsA.shape[0] != 1) or (chromsB.shape[0] != 1):
@@ -23,6 +80,20 @@ def get_nano_dots(dots, nanosynteny_minsize, chrom_info_A, chrom_info_B):
     return nano_dots
 
 def get_nano_neighborhood_dots(dots, nanosynteny_minsize, distance_cutoff, chrom_info_A, chrom_info_B):
+    """
+    Find dots within neighborhoods of nanosynteny.
+    
+    Input:
+        - dots: N X 9 array, dot plot array
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - distance_cutoff: integer, the maximum number of genes, defining a neighborhood
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+        
+    Output:
+        - nano_dots: N X 4 array, dots in nanosynteny
+        - nano_neighborhood_dots: N X 4 array, dots in the neighborhood of nanosynteny
+    """
     chromsA = np.unique(dots[:,0])
     chromsB = np.unique(dots[:,2])
     if (chromsA.shape[0] != 1) or (chromsB.shape[0] != 1):
@@ -44,6 +115,23 @@ def get_nano_neighborhood_dots(dots, nanosynteny_minsize, distance_cutoff, chrom
     return nano_dots, nano_neighborhood_dots
 
 def find_nanosynteny_chromosome_pair(condensed_dots, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support = True):
+    """
+    Find nanosynteny for a chromosome pair.
+
+    Input: 
+        - condensed_dots: N X 9 array, array of condensed dot plot
+        - species_data_A: N X 12 array, species data for species A
+        - species_data_B: N X 12 array, species data for species B
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+        - maps_A: list of 4 dictionaries, shift/unshift maps for species A
+        - maps_B: list of 4 dictionaries, shift/unshift maps for species B
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - check_for_nanosynteny_support: boolean, double check that each block contains nanosynteny (Default = True)
+
+    Output:
+        - blocks: list of N X 4 arrays, list of nanosynteny blocks, N varies from block to block
+    """
     nano_dots = get_nano_dots(condensed_dots, nanosynteny_minsize, chrom_info_A, chrom_info_B)
     if nano_dots.shape[0] > 0:
         Gm, Gp = create_chromosome_pair_dot_dags(nano_dots, 1)
@@ -53,6 +141,24 @@ def find_nanosynteny_chromosome_pair(condensed_dots, species_data_A, species_dat
     return blocks
 
 def find_microsynteny_chromosome_pair(condensed_dots, nanosynteny_blocks, max_distance, distance_cutoff, nanosynteny_minsize, chrom_info_A, chrom_info_B):
+    """
+    Find microsynteny for a chromosome pair.
+
+    Input:
+
+        - condensed_dots: N X 9 array, array of condensed dot plot
+        - nanosynteny_blocks: list of N X 4 arrays, list of nanosynteny blocks, N varies from block to block
+        - max_distance: integer, the maximum distance two dots can be from each other and still be incorporated into microsynteny
+          as part of a path between nanosynteny blocks.
+        - distance_cutoff: integer, the maximum distance (in genes) that two nanosyteny blocks can be from each other and be 
+          connected into microsynteny.
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+
+    Output:
+        - blocks: list of N X 4 arrays, list of microsynteny blocks, N varies from block to block
+    """
     nano_dots, nano_neighbor_dots = get_nano_neighborhood_dots(condensed_dots, nanosynteny_minsize, distance_cutoff, chrom_info_A, chrom_info_B)
     if (len(nanosynteny_blocks) > 0) and (nano_neighbor_dots.shape[0] > 0):
         blocks = connect_blocks(nanosynteny_blocks, nano_neighbor_dots, max_distance, distance_cutoff)
@@ -61,6 +167,24 @@ def find_microsynteny_chromosome_pair(condensed_dots, nanosynteny_blocks, max_di
     return blocks
     
 def identify_blocks_chrom_pair(condensed_dots, Gm, Gp, species_data_A, species_data_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support = True):
+    """
+    Identify nanosynteny blocks from a pair of chromosomes. To expand on the description below of the input
+    directed acyclic graphs, these are basically what DAGchainer (Haas et al. (2004) Bioinformatics. 20: 18, 3643-3646) uses.
+
+    Input:
+        - condensed_dots: N X 9 array, array of condensed dot plot
+        - Gm: networkx Graph object, a directed acyclic graph connecting together dots in the "negative" direction
+        - Gp: networkx Graph object, a directed acyclic graph connecting together dots in the "positive" direction
+        - species_data_A: N X 12 array, species data for species A
+        - species_data_B: N X 12 array, species data for species B
+        - maps_A: list of 4 dictionaries, shift/unshift maps for species A
+        - maps_B: list of 4 dictionaries, shift/unshift maps for species B
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - check_for_nanosynteny_support: boolean, double check that each block contains nanosynteny (Default = True)
+
+    Output:
+        - blocks: list of N X 4 arrays, list of nanosynteny blocks, N varies from block to block
+    """
     chromsA = np.unique(condensed_dots[:,0])
     chromsB = np.unique(condensed_dots[:,2])
     if (chromsA.shape[0] != 1) or (chromsB.shape[0] != 1):
@@ -110,6 +234,22 @@ def identify_blocks_chrom_pair(condensed_dots, Gm, Gp, species_data_A, species_d
     return blocks
 
 def get_block_extremes(block):
+    """
+    Find the smallest and largest gene indices, as well as the span of indices, of a synteny block.
+
+    Input:
+        - block: N X 4 array, a synteny block
+
+    Output:
+        - x: 1-dimensional array of N elements, gene indices for species A in the block
+        - y: 1-dimensional array of N elements, gene indices for species B in the block
+        - x_min: integer, the smallest gene index from species A in the block
+        - x_max: integer, the largest gene index from species A in the block
+        - y_min: integer, the smallest gene index from species B in the block
+        - y_max: integer, the largest gene index from species B in the block
+        - x_span: 1-dimensional array, all gene indices for species A in the block from x_min to x_max
+        - y_span: 1-dimensional array, all gene indices for species B in the block from y_min to y_max
+    """
     x = block[:,1].astype(int)
     y = block[:,3].astype(int)
     x_min = np.min(x)
@@ -121,6 +261,20 @@ def get_block_extremes(block):
     return x, y, x_min, x_max, y_min, y_max, x_span, y_span
     
 def block_distance(blockA, blockB):
+    """
+    The distance, in number of genes, between two synteny blocks. See our paper (https://doi.org/10.1101/2025.04.03.647042) for
+    a full definition.
+
+    Input:
+        - blockA: N X 4 array, a synteny block
+        - blockB: N X 4 array, a synteny block
+
+    Output:
+        - distance: integer, the distance between blockA and blockB
+        - slope: integer, the slope of the two blocks. This must be the same for both blocks.
+        - interblock_x: integer, the distance between blockA and blockB only in species A
+        - interblock_y: integer, the distance between blockA and blockB only in species B
+    """
     if (blockA[0,0] != blockB[0,0]) or (blockA[0,2] != blockB[0,2]):
         # Different chromosomes
         return np.inf
@@ -167,6 +321,20 @@ def block_distance(blockA, blockB):
     return distance, slope, interblock_x, interblock_y
 
 def create_chromosome_pair_dot_dags(dots, max_distance):
+    """
+    Create directed acyclic graphs with dots as nodes, in the positive and negative directions. These DAGS are 
+    basically what DAGchainer (Haas et al. (2004) Bioinformatics. 20: 18, 3643-3646) uses.
+
+    Input:
+        - dots: N X 9 array, array of condensed dot plot
+        - max_distance: integer, the maximum distance two dots can be from each other and still be incorporated into microsynteny
+          as part of a path between nanosynteny blocks.
+
+    Output:
+        - Gm: networkx Graph object, a directed acyclic graph connecting together dots in the "negative" direction
+        - Gp: networkx Graph object, a directed acyclic graph connecting together dots in the "positive" direction  
+    
+    """
     x = dots[:,1:2].astype(int)
     y = dots[:,3:4].astype(int)
     n = x.shape[0]
@@ -193,6 +361,20 @@ def create_chromosome_pair_dot_dags(dots, max_distance):
     return Gm, Gp
 
 def create_inter_nanosynteny_dot_dag(dots, G, slope, interblock_bounds, dots_not_in_blocks):
+    "LEFT OFF HERE 3/28/26 17:31"
+    """
+    Do the same thing as create_chromosome_pair_dot_dags, except between nanosynteny blocks.
+
+    Input:
+        - dots: N X 9 array, dot plot array
+        - G: networkx Graph object, a directed acyclic graph for dots, either dots in "positive" or "negative" direction
+        - slope: integer, positive or negative direction? (either -1 or +1)
+        - interblock_bounds: 
+        - dots_not_in_blocks: N X 9 array, dots that are not in nanosynteny blocks
+
+    Output:
+        - G_inter, end_nodes:
+    """
     interblock_x, interblock_y = interblock_bounds
     interx_min, interx_max = interblock_x
     intery_min, intery_max = interblock_y
