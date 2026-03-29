@@ -10,6 +10,25 @@ from multiprocessing import Pool
 from functools import partial
 
 def find_nanosynteny(condensed_dots, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support = True, verbose = False):
+    """
+    Primary function for finding nanosynteny in a comparison of two genomes. The main input is the condensed (i.e. TDECs instead of
+    genes) dot plot.
+
+    Input:
+        - condensed_dots: N X 9 array, array of condensed dot plot
+        - species_data_A: N X 12 array, species data for species A
+        - species_data_B: N X 12 array, species data for species B
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+        - maps_A: list of 4 dictionaries, shift/unshift maps for species A
+        - maps_B: list of 4 dictionaries, shift/unshift maps for species B
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - check_for_nanosynteny_support: boolean, double check that each block contains nanosynteny (Default = True)
+        - verbose: boolean, be noisy, printing out progress? (Default = False)
+
+    Output:
+        - blocks: list of N X 4 arrays, nanosynteny blocks, N varies from block to block
+    """
     chromsA = np.unique(condensed_dots[:,0])
     chromsB = np.unique(condensed_dots[:,2])
     blocks = []
@@ -26,6 +45,25 @@ def find_nanosynteny(condensed_dots, species_data_A, species_data_B, chrom_info_
     return blocks
 
 def find_nanosynteny_parallel(condensed_dots, species_data_A, species_data_B, chrom_info_A, chrom_info_B, maps_A, maps_B, nanosynteny_minsize, check_for_nanosynteny_support = True, n_proc = 1):
+    """
+    Use multiprocessing to find nanosynteny in a comparison of two genomes. The main input is the condensed (i.e. TDECs instead of
+    genes) dot plot.
+
+    Input:
+        - condensed_dots: N X 9 array, array of condensed dot plot
+        - species_data_A: N X 12 array, species data for species A
+        - species_data_B: N X 12 array, species data for species B
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+        - maps_A: list of 4 dictionaries, shift/unshift maps for species A
+        - maps_B: list of 4 dictionaries, shift/unshift maps for species B
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - check_for_nanosynteny_support: boolean, double check that each block contains nanosynteny (Default = True)
+        - n_proc = integer, number of processes (Default = 1)
+
+    Output:
+        - blocks: list of N X 4 arrays, nanosynteny blocks, N varies from block to block
+    """
     chromsA = np.unique(condensed_dots[:,0])
     chromsB = np.unique(condensed_dots[:,2])
     condensed_dots_all_chrom_pairs = []
@@ -45,6 +83,25 @@ def find_nanosynteny_parallel(condensed_dots, species_data_A, species_data_B, ch
     return blocks
 
 def find_microsynteny(condensed_dots, nanosynteny_blocks, chrom_info_A, chrom_info_B, max_distance, distance_cutoff, nanosynteny_minsize, verbose = False):
+    """
+    Primary function for finding microsynteny in a comparison of two genomes. The main input is the condensed (i.e. TDECs instead of
+    genes) dot plot.
+
+    Input:
+        - condensed_dots: N X 9 array, array of condensed dot plot
+        - nanosynteny_blocks: list of N X 4 arrays, nanosynteny blocks, N varies from block to block
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+        - max_distance: integer, the maximum distance two dots can be from each other and still be incorporated into microsynteny
+          as part of a path between nanosynteny blocks.
+        - distance_cutoff: integer, the maximum distance (in genes) that two nanosyteny blocks can be from each other and be 
+          connected into microsynteny.
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - verbose: boolean, be noisy, printing out progress? (Default = False)
+
+    Output:
+        - blocks: list of N X 4 arrays, microsynteny blocks, N varies from block to block
+    """
     chromsA = np.unique(condensed_dots[:,0])
     chromsB = np.unique(condensed_dots[:,2])
     blocks = []
@@ -63,6 +120,25 @@ def find_microsynteny(condensed_dots, nanosynteny_blocks, chrom_info_A, chrom_in
     return blocks
 
 def find_microsynteny_parallel(condensed_dots, nanosynteny_blocks, chrom_info_A, chrom_info_B, max_distance, distance_cutoff, nanosynteny_minsize, n_proc = 1):
+    """
+    Primary function for finding microsynteny in a comparison of two genomes. The main input is the condensed (i.e. TDECs instead of
+    genes) dot plot.
+
+    Input:
+        - condensed_dots: N X 9 array, array of condensed dot plot
+        - nanosynteny_blocks: list of N X 4 arrays, nanosynteny blocks, N varies from block to block
+        - chrom_info_A: dictionary, chromosome information dictionary for species A
+        - chrom_info_B: dictionary, chromosome information dictionary for species B
+        - max_distance: integer, the maximum distance two dots can be from each other and still be incorporated into microsynteny
+          as part of a path between nanosynteny blocks.
+        - distance_cutoff: integer, the maximum distance (in genes) that two nanosyteny blocks can be from each other and be 
+          connected into microsynteny.
+        - nanosynteny_minsize: integer, minimum number of genes in a nanosynteny block (usually 3)
+        - n_proc = integer, number of processes (Default = 1)
+
+    Output:
+        - blocks: list of N X 4 arrays, microsynteny blocks, N varies from block to block
+    """
     chromsA = np.unique(condensed_dots[:,0])
     chromsB = np.unique(condensed_dots[:,2])
     condensed_dots_nanosynteny_all_chrom_pairs = []
