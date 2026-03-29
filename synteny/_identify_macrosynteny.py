@@ -4,6 +4,23 @@ from scipy import stats
 from GenomicTools.tools import *
 
 def contingency_dot_plot(chromA, chromB, dots_input, chrom_info_A, chrom_info_B, microsynteny_input = True):
+    """
+    For a dotplot, generate a 2 X 2 contingency table using the binary categories 
+        - chromosome A, not chromosome A
+        - chromosome B, not chromosome B
+
+    Input:
+        - chromA: string, name of chromosome A from species A
+        - chromB: string, name of chromosome A from species B
+        - dots_input: N X 9 array, dot plot
+        - chrom_info_A: dictionary, chromosome information for species A
+        - chrom_info_B: dictionary, chromosome information for species B
+        - microsynteny_input: boolean, if you want to just consider dots in microsynteny this takes care of format issues
+          sinnce microsynteny comes in a list. (Default = True)
+
+    Output:
+        - C: array, contingency table
+    """
     if microsynteny_input == True:
         dot_plot = np.vstack(dots_input)
     else:
@@ -16,6 +33,23 @@ def contingency_dot_plot(chromA, chromB, dots_input, chrom_info_A, chrom_info_B,
     return C
 
 def calculate_macrosynteny(alpha, dots_input, chrom_info_A, chrom_info_B, microsynteny_input = True, calculate_metric = True):
+    """
+    Identify macrosynteny with contingency tables and Fisher's exact test.
+    
+    Input:
+        - alpha: float, significance cutoff for Fisher's exact test
+        - dots_input: N X 9 array, dot plot
+        - chrom_info_A: dictionary, chromosome information for species A
+        - chrom_info_B: dictionary, chromosome information for species B
+        - microsynteny_input: boolean, if you want to just consider dots in microsynteny this takes care of format issues
+          sinnce microsynteny comes in a list. (Default = True)
+        - calculate_metric: boolean, calculate an entropy-based metric? (Default = True)
+
+    Output:
+        - macrosynteny_chrom_pairs: list, pairs of chromosomes in macrosynteny
+        - H_mat_macro: array, summary of contingency tables
+        - metric: float, entropy-based metric (only if calculate_metric == True)
+    """
     chrom_names_A = alphanum_sort(chrom_info_A.keys())
     chrom_names_B = alphanum_sort(chrom_info_B.keys())
     chrom_locs_A = np.cumsum([0] + [chrom_info_A[key]['size'] for key in chrom_names_A])
