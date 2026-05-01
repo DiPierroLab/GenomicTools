@@ -4,6 +4,19 @@ This is a set of tools for comparative genomics, written in python. The workflow
 
 See our paper (https://doi.org/10.1101/2025.04.03.647042) for details on how we've used these tools.
 
+## Installation:
+
+Just clone this repository into your Python site packages directory. For me (using MacOS), this is ~/.local/lib/python3.9/site-packages
+
+### Dependencies:
+
+This package uses Python 3.9, and we used Anaconda 3 to manage package dependencies. These dependencies are:
+* NumPy 1.26.4
+* SciPy 1.11.4
+* Matplotlib 3.5.1
+* NetworkX 2.7.1
+* Biopython 1.79
+
 ## Examples:
 
 See GenomicTools/examples/ for an example of running APES to infer microsynteny between the human and mouse genomes.
