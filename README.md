@@ -16,6 +16,7 @@ This package uses Python 3.9, and we used Anaconda 3 to manage package dependenc
 * Matplotlib 3.5.1
 * NetworkX 2.7.1
 * Biopython 1.79
+
 To create an Anaconda environment with these packages installed, run
 ```
 conda create --name genomictools python=3.9 numpy=1.26.4 scipy=1.11.4 matplotlib=3.5.1 networkx=2.7.1 biopython=1.79 
